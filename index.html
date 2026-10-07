@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTMC Help-Desk - Executive Command Center</title>
+    
+    <!-- Library Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Flatpickr Datepicker -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        html, body { height: 100vh; width: 100%; overflow: hidden; background-color: #f1f5f9; color: #0f172a; }
+
+        .app-container { display: flex; height: 100vh; width: 100%; overflow: hidden; position: relative; }
+
+        /* --- SIDEBAR KIRI --- */
+        .sidebar { 
+            width: 220px; 
+            background-color: #ffffff; 
+            border-right: 1px solid #e2e8f0; 
+            padding: 14px 12px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            flex-shrink: 0; 
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2000;
+        }
+        .sidebar.collapsed { margin-left: -220px; }
+        
+        .logo-box { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9; }
+        .logo-box img { width: 38px; height: auto; }
+        .logo-title h1 { font-size: 13.5px; font-weight: 800; color: #0f172a; letter-spacing: 0.5px; line-height: 1.2; }
+        .logo-title p { font-size: 10px; font-weight: 600; color: #64748b; margin-top: 2px; }
+
+        .nav-menu { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+        .nav-item a { display: flex; align-items: center; gap: 8px; padding: 10px 14px; color: #475569; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 6px; transition: all 0.15s; }
+        .nav-item.active a { background-color: #eff6ff; color: #1d4ed8; font-weight: 800; }
+        .nav-item a:hover { background-color: #f8fafc; color: #0f172a; }
+        .sidebar-footer { font-size: 10px; color: #94a3b8; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 10px; font-weight: 600; line-height: 1.3; }
+
+        /* Mobile Sidebar Overlay */
+        .mobile-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.5); z-index: 1500; opacity: 0; transition: opacity 0.3s ease; }
+
+        /* --- MAIN WORKSPACE --- */
+        .main-wrapper { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; overflow-x: hidden; padding: 10px 14px; gap: 8px; transition: all 0.3s ease; }
+
+        /* --- HEADER ATAS --- */
+        .top-header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 6px 14px; border-radius: 8px; border: 1px solid #e2e8f0; height: 48px; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        
+        .btn-toggle-sidebar {
+            background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; width: 32px; height: 32px;
+            border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 16px; font-weight: 800; transition: all 0.2s;
+        }
+        .btn-toggle-sidebar:hover { background: #e2e8f0; color: #0f172a; }
+
+        .badge-live { background-color: #fee2e2; color: #dc2626; font-size: 10px; font-weight: 800; padding: 4px 9px; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px; letter-spacing: 0.5px; }
+        .pulse-dot { width: 7px; height: 7px; background-color: #dc2626; border-radius: 50%; animation: blink 1.2s infinite ease-in-out; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .clock-badge { font-size: 12px; font-weight: 700; color: #1e293b; background: #f8fafc; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; letter-spacing: 0.5px; }
+        .date-picker-box { width: 200px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 11.5px; font-weight: 600; color: #0f172a; background: #ffffff; outline: none; cursor: pointer; }
+
+        /* --- DASHBOARD GRID UTAMA (RESPONSIVE) --- */
+        .content-grid { display: grid; grid-template-columns: 320px 1fr 320px; gap: 10px; flex-grow: 1; min-height: 0; }
+        
+        .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .card-header { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #ffffff; flex-shrink: 0; }
+        .card-title { font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; display: flex; align-items: center; gap: 7px; }
+        .card-title::before { content: ""; width: 3.5px; height: 12px; background: #1d4ed8; border-radius: 2px; }
+        .card-title.red::before { background: #ef4444; }
+
+        /* --- KOLOM KIRI: LAPORAN KEJADIAN & JAM SIBUK --- */
+        .col-left { display: flex; flex-direction: column; gap: 10px; height: 100%; min-height: 0; }
+        
+        .emergency-wrapper { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 250px; }
+        .emergency-list { list-style: none; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; flex-grow: 1; }
+        .emergency-list::-webkit-scrollbar { width: 5px; }
+        .emergency-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        .emergency-card { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3.5px solid #ef4444; padding: 10px 12px; border-radius: 6px; display: flex; flex-direction: column; gap: 6px; }
+        .emergency-card.handled { border-left-color: #10b981; }
+        .card-meta-top { display: flex; justify-content: space-between; align-items: center; }
+        .time-label { font-size: 11px; color: #64748b; font-weight: 700; }
+        .badge-status { font-size: 9.5px; font-weight: 800; padding: 2.5px 7px; border-radius: 4px; letter-spacing: 0.3px; }
+        .badge-pending { background: #fee2e2; color: #ef4444; }
+        .badge-done { background: #dcfce7; color: #15803d; }
+        .emergency-text { font-size: 12px; color: #1e293b; line-height: 1.45; font-style: italic; font-weight: 500; }
+        
+        .emergency-followup-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 5px; padding: 7px 10px; font-size: 11px; color: #166534; line-height: 1.4; display: flex; flex-direction: column; gap: 2px; }
+        .emergency-followup-title { font-weight: 800; font-size: 10px; text-transform: uppercase; color: #15803d; display: flex; align-items: center; gap: 4px; }
+
+        .btn-action-resolve { align-self: flex-start; padding: 4px 10px; font-size: 10.5px; font-weight: 700; border-radius: 4px; border: 1px solid #cbd5e1; background: #ffffff; color: #1d4ed8; cursor: pointer; transition: all 0.15s; }
+        .btn-action-resolve:hover { background: #1d4ed8; color: #ffffff; border-color: #1d4ed8; }
+
+        .peak-wrapper { flex: 0 0 165px; display: flex; flex-direction: column; }
+        .chart-box { display: flex; align-items: flex-end; gap: 2px; height: 95px; padding: 8px 12px 0 12px; border-bottom: 1px solid #e2e8f0; margin-top: auto; }
+        .chart-col { flex-grow: 1; background: #bfdbfe; border-radius: 2px 2px 0 0; min-height: 2px; position: relative; transition: height 0.4s ease; }
+        .chart-col.peak { background: #1d4ed8; }
+        .chart-labels { display: flex; justify-content: space-between; padding: 5px 12px; font-size: 9.5px; color: #64748b; font-weight: 700; }
+
+        /* --- KOLOM TENGAH: KPI, PETA, KANAL --- */
+        .col-center { display: flex; flex-direction: column; gap: 10px; height: 100%; min-height: 0; }
+
+        .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; flex: 0 0 auto; }
+        .kpi-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 6px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+        .kpi-label { font-size: 9.5px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-value { font-size: 26px; font-weight: 900; color: #0f172a; margin-top: 1px; line-height: 1.1; }
+        .kpi-sub { font-size: 9px; font-weight: 600; color: #94a3b8; margin-top: 2px; }
+        .color-blue { color: #1d4ed8 !important; }
+        .color-red { color: #dc2626 !important; }
+        .color-green { color: #16a34a !important; }
+
+        .map-card { flex: 1 1 auto; display: flex; flex-direction: column; position: relative; min-height: 240px; border-radius: 8px; }
+        #mapJatim { width: 100%; height: 100%; z-index: 1; background: #e2e8f0; }
+        .map-overlay-badge { position: absolute; bottom: 8px; left: 8px; z-index: 500; background: rgba(255,255,255,0.96); padding: 4px 10px; border-radius: 5px; border: 1px solid #cbd5e1; font-size: 10px; font-weight: 800; color: #1e293b; pointer-events: none; }
+
+        .mid-bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: 0 0 auto; min-height: 155px; }
+        
+        .channels-wrapper { padding: 10px 14px; display: flex; flex-direction: column; justify-content: space-between; }
+        .channel-line { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; margin: 3px 0; }
+        .ch-name { width: 90px; font-weight: 700; color: #334155; font-size: 10.5px; }
+        .ch-bar-bg { flex-grow: 1; height: 8px; background: #f1f5f9; border-radius: 4px; margin: 0 8px; overflow: hidden; }
+        .ch-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+        .ch-count { width: 30px; text-align: right; font-weight: 900; color: #0f172a; font-size: 11px; }
+
+        .categories-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: 1fr 1fr; gap: 6px; padding: 8px; flex-grow: 1; }
+        .cat-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 6px 4px; }
+        .cat-item .name { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; }
+        .cat-item .num { font-size: 20px; font-weight: 900; color: #0f172a; margin-top: 2px; }
+
+        /* --- KOLOM KANAN: 10 TOPIK & SENTIMEN --- */
+        .col-right { display: flex; flex-direction: column; gap: 10px; height: 100%; min-height: 0; }
+        
+        .topics-wrapper { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 250px; }
+        .topics-list { list-style: none; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 7px; flex-grow: 1; }
+        .topics-list::-webkit-scrollbar { width: 5px; }
+        .topics-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        .topic-row { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; }
+        .topic-text { font-size: 11px; font-weight: 600; color: #1e293b; padding-right: 6px; line-height: 1.35; }
+        .topic-badge { background: #e2e8f0; color: #0f172a; font-size: 10.5px; font-weight: 900; padding: 2.5px 8px; border-radius: 12px; white-space: nowrap; }
+
+        .sentiment-wrapper { flex: 0 0 auto; display: flex; flex-direction: column; padding: 12px 14px; gap: 8px; min-height: 155px;}
+        .sent-box { display: flex; flex-direction: column; gap: 4px; }
+        .sent-head { display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 700; color: #475569; }
+        .sent-bar-bg { height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+        .sent-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+
+        /* --- MARKER RADAR PETA --- */
+        .radar-beacon-wrapper { position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .radar-beacon-core { width: 10px; height: 10px; background-color: #ef4444; border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 0 10px rgba(239, 68, 68, 0.9); z-index: 2; }
+        .radar-beacon-wave { position: absolute; width: 100%; height: 100%; border-radius: 50%; background-color: rgba(239, 68, 68, 0.45); animation: radar-ping 1.4s cubic-bezier(0, 0, 0.2, 1) infinite; z-index: 1; }
+        @keyframes radar-ping { 0% { transform: scale(0.4); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+
+        /* --- RESPONSIVE MEDIA QUERIES --- */
+        
+        /* Tablet & Laptop Layar Kecil (Max 1024px) */
+        @media (max-width: 1100px) {
+            .content-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; overflow-y: auto; height: calc(100vh - 70px); }
+            .col-left { height: auto; }
+            .col-center { grid-column: 1 / span 2; height: auto; }
+            .col-right { height: auto; }
+            .main-wrapper { overflow-y: auto; }
+            .emergency-wrapper, .map-card, .topics-wrapper { min-height: 350px; }
+            .kpi-row { grid-template-columns: repeat(2, 1fr); }
+            .sidebar { position: fixed; height: 100%; left: 0; transform: translateX(0); }
+            .sidebar.collapsed { transform: translateX(-100%); margin-left: 0; }
+        }
+
+        /* Handphone / Layar Sempit (Max 768px) */
+        @media (max-width: 768px) {
+            .content-grid { display: flex; flex-direction: column; height: auto; overflow-y: visible; }
+            .main-wrapper { padding: 8px; height: 100vh; overflow-y: auto; }
+            .top-header { flex-direction: column; height: auto; gap: 10px; padding: 10px; align-items: flex-start; }
+            .header-right { width: 100%; justify-content: space-between; }
+            .date-picker-box { width: 100%; }
+            
+            .kpi-row { grid-template-columns: repeat(2, 1fr); }
+            .mid-bottom-grid { grid-template-columns: 1fr; }
+            .categories-grid { grid-template-columns: repeat(2, 1fr); }
+
+            .emergency-wrapper, .map-card, .topics-wrapper { min-height: 300px; max-height: 400px; }
+            .peak-wrapper, .sentiment-wrapper { min-height: auto; }
+            
+            /* Sembunyikan sidebar by default di mobile */
+            .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); margin-left: 0; z-index: 2000; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+            .sidebar.active { transform: translateX(0); }
+        }
+
+        /* MODAL & TOAST */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(2px); display: none; justify-content: center; align-items: center; z-index: 3000; padding: 15px; }
+        .modal-overlay.active { display: flex; }
+        .modal-card { background: #ffffff; border-radius: 10px; width: 100%; max-width: 480px; box-shadow: 0 15px 30px rgba(0,0,0,0.2); overflow: hidden; }
+        .modal-header { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+        .btn-modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b; }
+        .modal-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+        .modal-quote { background: #f8fafc; border-left: 3px solid #ef4444; padding: 10px; font-size: 11.5px; font-style: italic; max-height: 100px; overflow-y: auto; }
+        .modal-textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; resize: vertical; min-height: 80px; outline: none; }
+        .modal-footer { padding: 12px 16px; background: #f8fafc; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #e2e8f0; }
+
+        .toast { position: fixed; bottom: 16px; right: 16px; background: #0f172a; color: white; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 700; transform: translateY(60px); opacity: 0; transition: all 0.25s; z-index: 4000; }
+        .toast.active { transform: translateY(0); opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- MOBILE OVERLAY -->
+        <div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar collapsed" id="appSidebar">
+            <div>
+                <div class="logo-box">
+                    <img src="logo-rtmc.png" alt="Logo" onerror="this.src='https://placehold.co/40x40?text=POLRI'">
+                    <div class="logo-title">
+                        <h1>RTMC HELP-DESK</h1>
+                        <p>Command Center Dashboard</p>
+                    </div>
+                </div>
+                <ul class="nav-menu">
+                    <li class="nav-item active"><a href="#">Dashboard</a></li>
+                    <li class="nav-item"><a href="history.html">Database</a></li>
+                    <li class="nav-item"><a href="rekap.html">Laporan</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-footer">
+                DITLANTAS POLDA JATIM<br>Presisi Command Center
+            </div>
+        </aside>
+
+        <!-- MAIN WORKSPACE -->
+        <main class="main-wrapper">
+            <!-- HEADER ATAS -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="btn-toggle-sidebar" onclick="toggleSidebar()" title="Buka Menu Sidebar">☰</button>
+                    <div class="badge-live"><div class="pulse-dot"></div> MONITORING AKTIF</div>
+                </div>
+                <div class="header-right">
+                    <div class="clock-badge" id="liveClockWIB">--:--:-- WIB</div>
+                    <input type="text" id="dashboardDateFilter" class="date-picker-box" placeholder="Rentang Tanggal...">
+                </div>
+            </header>
+
+            <!-- 3-COLUMN GRID -->
+            <div class="content-grid">
+                
+                <!-- KOLOM 1: DARURAT & JAM SIBUK -->
+                <div class="col-left">
+                    <div class="card emergency-wrapper">
+                        <div class="card-header">
+                            <span class="card-title red">🚨 LAPORAN KEJADIAN</span>
+                            <span style="font-size: 10px; font-weight:800; color:#ef4444;" id="countDaruratHeader">0 Lap</span>
+                        </div>
+                        <ul class="emergency-list" id="emergencyContainer">
+                            <li style="text-align:center; color:#94a3b8; font-size:11px; margin-top:20px;">Memuat data...</li>
+                        </ul>
+                    </div>
+
+                    <div class="card peak-wrapper">
+                        <div class="card-header">
+                            <span class="card-title">📈 Tren Jam Sibuk</span>
+                        </div>
+                        <div class="chart-box" id="peakChartContainer"></div>
+                        <div class="chart-labels">
+                            <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KOLOM 2: KPI, PETA, KANAL & KATEGORI -->
+                <div class="col-center">
+                    <div class="kpi-row">
+                        <div class="kpi-card"><div class="kpi-label">Total Masuk</div><div class="kpi-value color-blue" id="val-total-masuk">0</div></div>
+                        <div class="kpi-card"><div class="kpi-label">Info / Tanya</div><div class="kpi-value" id="val-pertanyaan">0</div></div>
+                        <div class="kpi-card"><div class="kpi-label">Pengaduan</div><div class="kpi-value color-red" id="val-pengaduan">0</div></div>
+                        <div class="kpi-card"><div class="kpi-label">Respon SLA</div><div class="kpi-value color-green" id="val-sla">0%</div></div>
+                    </div>
+
+                    <div class="card map-card">
+                        <div id="mapJatim"></div>
+                        <div class="map-overlay-badge">📍 Peta Komando Wilayah Jawa Timur</div>
+                    </div>
+
+                    <div class="mid-bottom-grid">
+                        <div class="card channels-wrapper">
+                            <div class="card-header" style="padding: 0 0 6px 0; margin-bottom: 2px;">
+                                <span class="card-title">📊 Kanal Masuk Aduan</span>
+                            </div>
+                            <div class="channel-line"><span class="ch-name">WhatsApp CS</span><div class="ch-bar-bg"><div class="ch-bar-fill" id="bar-wacs" style="background:#22c55e;"></div></div><span class="ch-count" id="count-wacs">0</span></div>
+                            <div class="channel-line"><span class="ch-name">ChatBot SAKTI</span><div class="ch-bar-bg"><div class="ch-bar-fill" id="bar-chatbot" style="background:#ef4444;"></div></div><span class="ch-count" id="count-chatbot">0</span></div>
+                            <div class="channel-line"><span class="ch-name">Hotline Telp</span><div class="ch-bar-bg"><div class="ch-bar-fill" id="bar-hotline" style="background:#eab308;"></div></div><span class="ch-count" id="count-hotline">0</span></div>
+                            <div class="channel-line"><span class="ch-name">Instagram DM</span><div class="ch-bar-bg"><div class="ch-bar-fill" id="bar-instagram" style="background:#f97316;"></div></div><span class="ch-count" id="count-instagram">0</span></div>
+                            <div class="channel-line"><span class="ch-name">TikTok DM</span><div class="ch-bar-bg"><div class="ch-bar-fill" id="bar-tiktok" style="background:#a855f7;"></div></div><span class="ch-count" id="count-tiktok">0</span></div>
+                        </div>
+
+                        <div class="card categories-card">
+                            <div class="card-header" style="padding: 4px 10px;">
+                                <span class="card-title">📁 Kategori Layanan</span>
+                            </div>
+                            <div class="categories-grid">
+                                <div class="cat-item"><div class="name">SIM</div><div class="num" id="cat-sim">0</div></div>
+                                <div class="cat-item"><div class="name">STNK</div><div class="num" id="cat-stnk">0</div></div>
+                                <div class="cat-item"><div class="name">BPKB</div><div class="num" id="cat-bpkb">0</div></div>
+                                <div class="cat-item"><div class="name">SAMSAT</div><div class="num" id="cat-samsat">0</div></div>
+                                <div class="cat-item"><div class="name">ETLE</div><div class="num" id="cat-etle">0</div></div>
+                                <div class="cat-item"><div class="name">TILANG</div><div class="num" id="cat-tilang">0</div></div>
+                                <div class="cat-item"><div class="name">LAKA / PJR</div><div class="num" id="cat-pjr">0</div></div>
+                                <div class="cat-item"><div class="name">LAIN-LAIN</div><div class="num" id="cat-lain">0</div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KOLOM 3: 10 TOPIK & SENTIMEN -->
+                <div class="col-right">
+                    <div class="card topics-wrapper">
+                        <div class="card-header">
+                            <span class="card-title">🔥 10 Topik Masalah</span>
+                        </div>
+                        <ul class="topics-list" id="topicsContainer"></ul>
+                    </div>
+
+                    <div class="card sentiment-wrapper">
+                        <div class="sent-box">
+                            <div class="sent-head"><span>Positif / Apresiasi</span><span id="sent-pos-val" class="color-green">0%</span></div>
+                            <div class="sent-bar-bg"><div class="sent-bar-fill" id="sent-pos-bar" style="background:#16a34a; width:0%"></div></div>
+                        </div>
+                        <div class="sent-box">
+                            <div class="sent-head"><span>Netral / Tanya Syarat</span><span id="sent-net-val">0%</span></div>
+                            <div class="sent-bar-bg"><div class="sent-bar-fill" id="sent-net-bar" style="background:#f59e0b; width:0%"></div></div>
+                        </div>
+                        <div class="sent-box">
+                            <div class="sent-head"><span>Negatif / Keluhan</span><span id="sent-neg-val" class="color-red">0%</span></div>
+                            <div class="sent-bar-bg"><div class="sent-bar-fill" id="sent-neg-bar" style="background:#ef4444; width:0%"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL TINDAK LANJUT OPERATOR -->
+    <div class="modal-overlay" id="tindakLanjutModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>🚨 Tindak Lanjut & Arahan</h3>
+                <button class="btn-modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="modalRowId">
+                <div style="font-size: 10px; color: #64748b; font-weight: 600;" id="modalMetaInfo">Kanal: - | Waktu: -</div>
+                <div class="modal-quote" id="modalTextPertanyaan">Isi laporan aduan...</div>
+                <textarea id="modalInputJawaban" class="modal-textarea" placeholder="Ketik tindakan penanganan unit lapangan..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-action btn-cancel" style="padding: 8px 14px;" onclick="closeModal()">Batal</button>
+                <button class="btn-action btn-save" style="padding: 8px 14px;" onclick="simpanResponTindakLanjut()">✓ Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toastNotifier"></div>
+
+    <script>
+        const STORAGE_KEY = 'rtmc_aduan_data';
+
+        const jatimCoords = {
+            "surabaya": [-7.250445, 112.768845], "sidoarjo": [-7.4478, 112.7183], "gresik": [-7.1565, 112.6555],
+            "malang": [-7.9839, 112.6214], "batu": [-7.8671, 112.5239], "mojokerto": [-7.4697, 112.4338],
+            "pasuruan": [-7.6453, 112.9075], "probolinggo": [-7.7490, 113.2159], "lumajang": [-8.1333, 113.2167],
+            "jember": [-8.1725, 113.6995], "banyuwangi": [-8.2192, 114.3692], "situbondo": [-7.7051, 113.9928],
+            "bondowoso": [-7.9135, 113.8214], "kediri": [-7.8228, 112.0119], "blitar": [-8.0954, 112.1609],
+            "tulungagung": [-8.0664, 111.8986], "trenggalek": [-8.0617, 111.7107], "pacitan": [-8.1969, 111.0970],
+            "ponorogo": [-7.8687, 111.4651], "madiun": [-7.6298, 111.5239], "magetan": [-7.6534, 111.3289],
+            "ngawi": [-7.4045, 111.4429], "bojonegoro": [-7.1502, 111.8809], "tuban": [-6.8953, 112.0507],
+            "lamongan": [-7.1189, 112.4150], "jombang": [-7.5459, 112.2327], "nganjuk": [-7.6041, 111.9015],
+            "bangkalan": [-7.0254, 112.7425], "sampang": [-7.1872, 113.2424], "pamekasan": [-7.1581, 113.4808],
+            "sumenep": [-7.0094, 113.8478]
+        };
+
+        let map;
+        let mapMarkers = [];
+        let allRawData = [];
+        let liveState = {};
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('appSidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            const isMobile = window.innerWidth <= 768;
+
+            if (isMobile) {
+                sidebar.classList.toggle('active');
+                if (sidebar.classList.contains('active')) {
+                    overlay.style.display = 'block';
+                    setTimeout(() => overlay.style.opacity = '1', 10);
+                } else {
+                    overlay.style.opacity = '0';
+                    setTimeout(() => overlay.style.display = 'none', 300);
+                }
+            } else {
+                sidebar.classList.toggle('collapsed');
+            }
+            setTimeout(() => { if (map) map.invalidateSize(); }, 320);
+        }
+
+        function updateLiveClock() {
+            const now = new Date();
+            document.getElementById('liveClockWIB').innerText = now.toLocaleTimeString('id-ID', { hour12: false }) + " WIB";
+        }
+        setInterval(updateLiveClock, 1000);
+        updateLiveClock();
+
+        function initMap() {
+            const jatimStrictBounds = [[-8.85, 111.0], [-6.70, 114.65]];
+            map = L.map('mapJatim', { 
+                zoomControl: false, attributionControl: false, dragging: true, 
+                scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, touchZoom: true 
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, subdomains: ['a', 'b', 'c'] }).addTo(map);
+
+            map.fitBounds(jatimStrictBounds, { padding: [10, 10] });
+            setTimeout(() => { map.invalidateSize(); map.fitBounds(jatimStrictBounds); }, 300);
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toastNotifier');
+            toast.innerText = message;
+            if (isError) toast.classList.add('error'); else toast.classList.remove('error');
+            toast.classList.add('active');
+            setTimeout(() => { toast.classList.remove('active'); }, 3000);
+        }
+
+        function getStorageData() {
+            let data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveStorageData(arr) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+        }
+
+        function loadData() {
+            allRawData = getStorageData();
+            let activeDate = document.getElementById("dashboardDateFilter").value;
+            processData(activeDate);
+        }
+
+        function ekstrakIntiTopik(pertanyaan, kategori) {
+            let text = (pertanyaan || "").toLowerCase();
+            if (text.includes("pemutihan")) return "Pemutihan Denda Pajak";
+            if (text.includes("jadwal") || text.includes("lokasi") || text.includes("dimana")) {
+                if (text.includes("simling") || text.includes("keliling") || text.includes("sim")) return "Lokasi SIM Keliling";
+                if (text.includes("samsat")) return "Jadwal Samsat Keliling";
+                return "Lokasi & Jadwal Layanan";
+            }
+            if (text.includes("syarat") || text.includes("biaya") || text.includes("bikin")) {
+                if (text.includes("sim")) return "Syarat & Biaya SIM";
+                if (text.includes("stnk") || text.includes("pajak")) return "Prosedur Pajak & STNK";
+                return "Syarat Administrasi";
+            }
+            if (text.includes("etle") || text.includes("tilang")) return "Konfirmasi & Blokir ETLE";
+            if (text.includes("mutasi") || text.includes("balik nama")) return "Mutasi & Balik Nama Kendaraan";
+            if (text.includes("macet") || text.includes("kecelakaan") || text.includes("laka")) return "Laporan Insiden Lalin / Laka";
+            let kat = (kategori || "").toUpperCase();
+            return kat === "LAIN" || kat === "" ? "Informasi Umum Layanan" : "Layanan " + kat;
+        }
+
+        function processData(dateFilterStr) {
+            liveState = {
+                terpilih: 0, totalDitangani: 0,
+                klasifikasi: { pertanyaan: 0, pengaduan: 0, darurat: 0 },
+                channels: { chatbot: 0, wacs: 0, hotline: 0, tiktok: 0, instagram: 0 },
+                categories: { sim: 0, stnk: 0, bpkb: 0, samsat: 0, etle: 0, tilang: 0, pjr: 0, lain: 0 },
+                topTopics: [], wilayah: {}, laporanDarurat: [], sentimen: { positif: 0, netral: 0, negatif: 0 }, peakHours: Array(24).fill(0) 
+            };
+
+            let startDate = null, endDate = null;
+            if (dateFilterStr) {
+                let parts = dateFilterStr.split(" to ");
+                startDate = parts[0]; endDate = parts.length > 1 ? parts[1] : parts[0];
+            }
+
+            allRawData.forEach(row => {
+                let rowDate = row.tanggal ? row.tanggal.split(" ")[0] : "";
+                if (startDate && endDate && (rowDate < startDate || rowDate > endDate)) return;
+
+                liveState.terpilih += 1;
+                let teks = (row.pertanyaan || "").toLowerCase();
+                let jawaban = (row.jawaban || "").trim(); 
+                let isHandled = jawaban !== "";
+
+                if (isHandled) liveState.totalDitangani += 1;
+
+                let sentimenRaw = (row.sentimen || "").toLowerCase();
+                let isPositif = sentimenRaw.includes("positif") || teks.includes("terima") || teks.includes("mantap") || teks.includes("cepat");
+                let isNegatif = sentimenRaw.includes("negatif") || teks.includes("kecewa") || teks.includes("lama") || teks.includes("lambat") || teks.includes("komplain");
+                
+                if (isPositif) liveState.sentimen.positif += 1;
+                else if (isNegatif) liveState.sentimen.negatif += 1;
+                else liveState.sentimen.netral += 1;
+
+                let katUpper = (row.topik || "").toUpperCase();
+                let tipeUpper = (row.tipe_laporan || "").toUpperCase();
+                let isDarurat = (tipeUpper === "DARURAT") || katUpper.includes("PJR") || teks.includes("kecelakaan") || teks.includes("laka");
+
+                if (isDarurat) {
+                    liveState.klasifikasi.darurat += 1;
+                    let timeLabel = row.tanggal.match(/\s(\d{1,2}:\d{2})/) ? row.tanggal.match(/\s(\d{1,2}:\d{2})/)[1] + " WIB" : (row.tanggal || "").substring(0, 10);
+                    liveState.laporanDarurat.push({ 
+                        id: row.id, waktuDisplay: timeLabel, teks: row.pertanyaan, jawaban: row.jawaban || '', status: isHandled ? "ditangani" : "menunggu" 
+                    });
+                } else if (isNegatif) liveState.klasifikasi.pengaduan += 1;
+                else liveState.klasifikasi.pertanyaan += 1;
+
+                let timeMatchHour = (row.tanggal || "").match(/\s(\d{1,2}):/); 
+                if (timeMatchHour && timeMatchHour[1]) {
+                    let jamNum = parseInt(timeMatchHour[1]);
+                    if (!isNaN(jamNum) && jamNum >= 0 && jamNum <= 23) liveState.peakHours[jamNum] += 1;
+                }
+
+                for (let city of Object.keys(jatimCoords)) {
+                    if (teks.includes(city)) { liveState.wilayah[city] = (liveState.wilayah[city] || 0) + 1; break; }
+                }
+
+                let rawKanal = (row.sumber_media || "").toLowerCase();
+                if (rawKanal.includes("bot")) liveState.channels["chatbot"] += 1;
+                else if (rawKanal.includes("hot") || rawKanal.includes("tel")) liveState.channels["hotline"] += 1;
+                else if (rawKanal.includes("tik")) liveState.channels["tiktok"] += 1;
+                else if (rawKanal.includes("ig") || rawKanal.includes("inst")) liveState.channels["instagram"] += 1;
+                else liveState.channels["wacs"] += 1;
+
+                let rawKat = (row.topik || "").toLowerCase();
+                let kategori = "lain";
+                if (rawKat.includes("tilang")) kategori = "tilang";
+                else if (rawKat.includes("sim")) kategori = "sim";
+                else if (rawKat.includes("stnk")) kategori = "stnk";
+                else if (rawKat.includes("bpkb")) kategori = "bpkb";
+                else if (rawKat.includes("samsat")) kategori = "samsat";
+                else if (rawKat.includes("etle")) kategori = "etle";
+                else if (rawKat.includes("pjr") || rawKat.includes("laka")) kategori = "pjr";
+                liveState.categories[kategori] += 1;
+
+                let inti = ekstrakIntiTopik(row.pertanyaan, kategori);
+                let f = liveState.topTopics.find(t => t.text === inti);
+                if (f) f.count++; else liveState.topTopics.push({ text: inti, count: 1 });
+            });
+            renderDashboard();
+        }
+
+        function renderDashboard() {
+            document.getElementById('val-total-masuk').innerText = liveState.terpilih;
+            document.getElementById('val-pertanyaan').innerText = liveState.klasifikasi.pertanyaan;
+            document.getElementById('val-pengaduan').innerText = liveState.klasifikasi.pengaduan;
+            document.getElementById('val-sla').innerText = (liveState.terpilih === 0 ? 0 : Math.round((liveState.totalDitangani / liveState.terpilih) * 100)) + '%';
+            document.getElementById('countDaruratHeader').innerText = liveState.klasifikasi.darurat + " Lap";
+
+            const maxCh = Math.max(...Object.values(liveState.channels), 1);
+            for (const [ch, val] of Object.entries(liveState.channels)) {
+                if(document.getElementById(`count-${ch}`)) {
+                    document.getElementById(`count-${ch}`).innerText = val;
+                    document.getElementById(`bar-${ch}`).style.width = (val / maxCh) * 100 + '%';
+                }
+            }
+
+            for (const [cat, val] of Object.entries(liveState.categories)) {
+                if(document.getElementById(`cat-${cat}`)) document.getElementById(`cat-${cat}`).innerText = val;
+            }
+
+            liveState.topTopics.sort((a, b) => b.count - a.count);
+            const topicsContainer = document.getElementById('topicsContainer');
+            topicsContainer.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                if (liveState.topTopics[i]) {
+                    topicsContainer.innerHTML += `<li class="topic-row"><span class="topic-text">${i+1}. ${liveState.topTopics[i].text}</span><span class="topic-badge">${liveState.topTopics[i].count}</span></li>`;
+                }
+            }
+
+            if (mapMarkers.length > 0) { mapMarkers.forEach(m => map.removeLayer(m)); mapMarkers = []; }
+            for (let [city, count] of Object.entries(liveState.wilayah)) {
+                if (jatimCoords[city]) {
+                    let radarIcon = L.divIcon({ className: '', html: `<div class="radar-beacon-wrapper"><div class="radar-beacon-wave"></div><div class="radar-beacon-core"></div></div>`, iconSize: [26, 26], iconAnchor: [13, 13] });
+                    let marker = L.marker(jatimCoords[city], { icon: radarIcon }).addTo(map);
+                    marker.bindPopup(`<div class="popup-city-title">📍 POLRES / KOTA ${city}</div><div>Aduan Masuk: <b>${count} Laporan</b></div><div style="font-size:10px; color:#64748b; margin-top:3px;">Status: Wilayah Terpantau Aktif</div>`);
+                    mapMarkers.push(marker);
+                }
+            }
+
+            const emergencyContainer = document.getElementById('emergencyContainer');
+            emergencyContainer.innerHTML = '';
+            let daftarDarurat = [...liveState.laporanDarurat].reverse();
+            if (daftarDarurat.length === 0) {
+                emergencyContainer.innerHTML = '<li style="text-align:center; color:#94a3b8; font-size:11.5px; margin-top:24px;">Wilayah Kondusif. Nihil insiden darurat.</li>';
+            } else {
+                daftarDarurat.forEach(item => {
+                    let isHandled = item.status === 'ditangani';
+                    let followupHTML = isHandled && item.jawaban.trim() ? `<div class="emergency-followup-box"><span class="emergency-followup-title">⚡ Tindak Lanjut:</span><div>${item.jawaban}</div></div>` : '';
+                    emergencyContainer.innerHTML += `
+                        <li class="emergency-card ${isHandled ? 'handled' : ''}">
+                            <div class="card-meta-top"><span class="time-label">${item.waktuDisplay}</span><span class="badge-status ${isHandled ? 'badge-done' : 'badge-pending'}">${isHandled ? '✓ SELESAI' : '⏳ ATENSI'}</span></div>
+                            <div class="emergency-text">"${item.teks}"</div>
+                            ${followupHTML}
+                            <button class="btn-action-resolve" onclick="openModal(${item.id})">✍️ Tindak Lanjut</button>
+                        </li>
+                    `;
+                });
+            }
+
+            let divSent = Math.max(liveState.sentimen.positif + liveState.sentimen.netral + liveState.sentimen.negatif, 1);
+            let pPos = Math.round((liveState.sentimen.positif / divSent) * 100);
+            let pNet = Math.round((liveState.sentimen.netral / divSent) * 100);
+            let pNeg = Math.round((liveState.sentimen.negatif / divSent) * 100);
+
+            document.getElementById('sent-pos-val').innerText = pPos + '%'; document.getElementById('sent-pos-bar').style.width = pPos + '%';
+            document.getElementById('sent-net-val').innerText = pNet + '%'; document.getElementById('sent-net-bar').style.width = pNet + '%';
+            document.getElementById('sent-neg-val').innerText = pNeg + '%'; document.getElementById('sent-neg-bar').style.width = pNeg + '%';
+
+            let chartContainer = document.getElementById('peakChartContainer');
+            chartContainer.innerHTML = '';
+            let maxPeak = Math.max(...liveState.peakHours, 1);
+            for (let h = 0; h < 24; h++) {
+                let val = liveState.peakHours[h];
+                let isPeak = (val === maxPeak && val > 0);
+                chartContainer.innerHTML += `<div class="chart-col ${isPeak ? 'peak' : ''}" style="height: ${(val / maxPeak) * 100}%" data-tip="${h.toString().padStart(2, '0')}:00 (${val})"></div>`;
+            }
+        }
+
+        function openModal(id) {
+            let item = allRawData.find(d => parseInt(d.id) === parseInt(id));
+            if (!item) return;
+            document.getElementById('modalRowId').value = item.id;
+            document.getElementById('modalMetaInfo').innerText = `Kanal: ${item.sumber_media || '-'} | Waktu: ${item.tanggal || '-'}`;
+            document.getElementById('modalTextPertanyaan').innerText = `"${item.pertanyaan || '-'}"`;
+            document.getElementById('modalInputJawaban').value = item.jawaban || '';
+            document.getElementById('tindakLanjutModal').classList.add('active');
+        }
+
+        function closeModal() { document.getElementById('tindakLanjutModal').classList.remove('active'); }
+
+        function simpanResponTindakLanjut() {
+            let id = parseInt(document.getElementById('modalRowId').value);
+            let jawaban = document.getElementById('modalInputJawaban').value.trim();
+            if (!jawaban) { alert("Mohon ketikkan arahan tindakan."); return; }
+            let index = allRawData.findIndex(d => parseInt(d.id) === id);
+            if (index !== -1) {
+                allRawData[index].jawaban = jawaban;
+                saveStorageData(allRawData);
+                showToast("✓ Respon penanganan disimpan!");
+                closeModal(); loadData();
+            }
+        }
+
+        window.onload = function() {
+            initMap();
+            flatpickr("#dashboardDateFilter", {
+                mode: "range", dateFormat: "Y-m-d", altInput: true, altFormat: "d M Y",
+                onChange: function(dates, dateStr) { if (dates.length === 2 || dates.length === 0) processData(dateStr); }
+            });
+            loadData();
+        };
+
+        window.addEventListener('resize', () => { if (window.innerWidth > 768) document.getElementById('mobileOverlay').style.display = 'none'; });
+    </script>
+</body>
+</html>

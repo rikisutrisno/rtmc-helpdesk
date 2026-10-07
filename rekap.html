@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Eksekutif Anev - RTMC Help-Desk</title>
+    
+    <!-- Library Excel & PDF -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Flatpickr Datepicker -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        html, body { height: 100vh; width: 100vw; overflow: hidden; background-color: #f1f5f9; color: #0f172a; }
+
+        .app-container { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+
+        /* SIDEBAR IDENTIK */
+        .sidebar { width: 210px; background-color: #ffffff; border-right: 1px solid #e2e8f0; padding: 14px 12px; display: flex; flex-direction: column; justify-content: space-between; flex-shrink: 0; }
+        .logo-box { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9; }
+        .logo-box img { width: 36px; height: auto; }
+        .logo-title h1 { font-size: 13px; font-weight: 800; color: #0f172a; letter-spacing: 0.5px; line-height: 1.2; }
+        .logo-title p { font-size: 8.5px; font-weight: 600; color: #64748b; }
+
+        .nav-menu { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-top: 14px; }
+        .nav-item a { display: flex; align-items: center; gap: 8px; padding: 9px 12px; color: #64748b; text-decoration: none; font-size: 12px; font-weight: 600; border-radius: 6px; transition: all 0.15s; }
+        .nav-item.active a { background-color: #eff6ff; color: #1d4ed8; font-weight: 700; }
+        .nav-item a:hover { background-color: #f8fafc; color: #0f172a; }
+        .sidebar-footer { font-size: 9px; color: #94a3b8; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 10px; font-weight: 600; }
+
+        /* MAIN CONTENT */
+        .main-wrapper { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; padding: 10px 14px; gap: 10px; }
+
+        /* TOP HEADER & FILTER TOOLBAR */
+        .top-header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; height: 50px; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .header-title-text h2 { font-size: 13.5px; font-weight: 800; color: #0f172a; }
+        .header-title-text span { font-size: 10.5px; color: #64748b; font-weight: 600; }
+
+        .filter-controls { display: flex; align-items: center; gap: 6px; }
+        .filter-select { padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 11px; font-weight: 600; color: #0f172a; background: #ffffff; outline: none; }
+        .date-box { width: 185px; padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 11px; font-weight: 600; color: #0f172a; background: #ffffff; outline: none; cursor: pointer; }
+
+        .btn-act { padding: 6px 11px; border-radius: 6px; font-size: 11px; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: opacity 0.2s; }
+        .btn-act:hover { opacity: 0.9; }
+        .btn-excel { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .btn-pdf { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+        .btn-special-topic { background: #1d4ed8; color: #ffffff; border: 1px solid #1e40af; }
+        .btn-reset { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+        /* KPI SUMMARY ROW */
+        .kpi-summary-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; flex-shrink: 0; }
+        .kpi-mini-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .kpi-mini-label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; }
+        .kpi-mini-val { font-size: 22px; font-weight: 900; color: #0f172a; }
+        .color-blue { color: #1d4ed8 !important; }
+        .color-green { color: #16a34a !important; }
+        .color-red { color: #dc2626 !important; }
+
+        /* EXECUTIVE REPORT CONTAINER */
+        .report-workspace { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex-grow: 1; min-height: 0; }
+        
+        .report-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .report-card-header { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; background: #ffffff; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .report-card-title { font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: #334155; display: flex; align-items: center; gap: 6px; letter-spacing: 0.4px; }
+        .report-card-title::before { content: ""; width: 3.5px; height: 12px; background: #1d4ed8; border-radius: 2px; }
+        .report-card-title.red::before { background: #ef4444; }
+
+        .report-card-body { padding: 12px; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 14px; }
+        .report-card-body::-webkit-scrollbar { width: 5px; }
+        .report-card-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        /* AGGREGATE TABLES */
+        .summary-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .summary-table th { background: #f8fafc; color: #475569; font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 7px 9px; border: 1px solid #e2e8f0; }
+        .summary-table td { padding: 7px 9px; border: 1px solid #e2e8f0; color: #1e293b; font-weight: 600; }
+        .summary-table tr:hover td { background: #f8fafc; }
+        .col-center { text-align: center; }
+        .col-right { text-align: right; }
+
+        .section-subhead { font-weight: 800; font-size: 11px; text-transform: uppercase; color: #1e293b; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+
+        .progress-bar-bg { width: 100%; height: 7px; background: #f1f5f9; border-radius: 4px; overflow: hidden; margin-top: 3px; }
+        .progress-bar-fill { height: 100%; border-radius: 4px; }
+
+        .eval-note-box { background: #f8fafc; border-left: 3.5px solid #1d4ed8; border-radius: 0 6px 6px 0; padding: 10px 12px; font-size: 11.5px; color: #1e293b; line-height: 1.5; }
+        .eval-note-title { font-weight: 800; font-size: 10.5px; text-transform: uppercase; color: #1d4ed8; margin-bottom: 3px; display: block; }
+
+        .toast { position: fixed; bottom: 16px; right: 16px; background: #0f172a; color: white; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 700; transform: translateY(60px); opacity: 0; transition: all 0.25s; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .toast.active { transform: translateY(0); opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div>
+                <div class="logo-box">
+                    <img src="logo-rtmc.png" alt="Logo RTMC" onerror="this.src='https://placehold.co/40x40?text=POLRI'">
+                    <div class="logo-title">
+                        <h1>RTMC HELP-DESK</h1>
+                        <p>Command Center Dashboard</p>
+                    </div>
+                </div>
+                <ul class="nav-menu">
+                    <li class="nav-item"><a href="index.html">Dashboard</a></li>
+                    <li class="nav-item"><a href="history.html">Database</a></li>
+                    <li class="nav-item active"><a href="#">Laporan</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-footer">
+                DITLANTAS POLDA JATIM<br>Presisi Command Center
+            </div>
+        </aside>
+
+        <!-- MAIN VIEW -->
+        <main class="main-wrapper">
+            <!-- TOOLBAR FILTER EKSEKUTIF -->
+            <header class="top-header">
+                <div class="header-title-text">
+                    <h2>Laporan Analisa & Evaluasi (Anev) Eksekutif</h2>
+                    <span id="labelPeriodeFilter">Memuat rentang waktu...</span>
+                </div>
+                
+                <div class="filter-controls">
+                    <input type="text" id="filterDateRange" class="date-box" placeholder="Rentang Tanggal...">
+                    
+                    <select id="filterMedia" class="filter-select" onchange="applyFilters()">
+                        <option value="">Semua Media (Global)</option>
+                        <option value="WHATSAPP">WhatsApp CS</option>
+                        <option value="BOT">ChatBot SAKTI</option>
+                        <option value="HOTLINE">Hotline Telp</option>
+                        <option value="TIKTOK">TikTok DM</option>
+                        <option value="INSTAGRAM">Instagram DM</option>
+                    </select>
+
+                    <select id="filterKategori" class="filter-select" onchange="applyFilters()">
+                        <option value="">Semua Kategori</option>
+                        <option value="SIM">SIM</option>
+                        <option value="STNK">STNK</option>
+                        <option value="BPKB">BPKB</option>
+                        <option value="SAMSAT">Samsat</option>
+                        <option value="ETLE">ETLE</option>
+                        <option value="TILANG">Tilang</option>
+                        <option value="PJR">Laka / PJR</option>
+                        <option value="LAIN">Lain-lain</option>
+                    </select>
+
+                    <button class="btn-act btn-special-topic" onclick="exportTopikKhususPDF()" title="Download Laporan Khusus 10 Isu Terbanyak">📥 Tarik 10 Topik Masalah</button>
+                    <button class="btn-act btn-excel" onclick="exportExcel()">📊 Export Excel</button>
+                    <button class="btn-act btn-pdf" onclick="exportPDF()">📄 Export PDF</button>
+                    <button class="btn-act btn-reset" onclick="resetFilters()">🔄 Reset</button>
+                </div>
+            </header>
+
+            <!-- 5 METRIK UTAMA RESUME DASHBOARD -->
+            <div class="kpi-summary-row">
+                <div class="kpi-mini-card">
+                    <span class="kpi-mini-label">Total Aduan Masuk</span>
+                    <span class="kpi-mini-val color-blue" id="kpiTotal">0</span>
+                </div>
+                <div class="kpi-mini-card">
+                    <span class="kpi-mini-label">Info & Pertanyaan</span>
+                    <span class="kpi-mini-val" id="kpiInfo">0</span>
+                </div>
+                <div class="kpi-mini-card">
+                    <span class="kpi-mini-label">Keluhan / Komplain</span>
+                    <span class="kpi-mini-val color-red" id="kpiPengaduan">0</span>
+                </div>
+                <div class="kpi-mini-card">
+                    <span class="kpi-mini-label">Respon SLA (Selesai)</span>
+                    <span class="kpi-mini-val color-green" id="kpiSla">0%</span>
+                </div>
+                <div class="kpi-mini-card">
+                    <span class="kpi-mini-label">Laporan Darurat / Laka</span>
+                    <span class="kpi-mini-val color-red" id="kpiDarurat">0 Lap</span>
+                </div>
+            </div>
+
+            <!-- WORKSPACE KESIMPULAN ANEV (2 BLOK STRUKTUR) -->
+            <div class="report-workspace">
+                
+                <!-- KOLOM KIRI: KATEGORI LAYANAN, KANAL MEDIA, & LAPORAN DARURAT -->
+                <div class="report-card">
+                    <div class="report-card-header">
+                        <span class="report-card-title">📁 Distribusi Kategori Layanan & Kanal Masuk</span>
+                        <span style="font-size:10px; font-weight:800; color:#64748b;" id="subLabelKategori">Agregat Bidang</span>
+                    </div>
+                    <div class="report-card-body">
+                        <!-- 1. Tabel 8 Kategori Layanan -->
+                        <div>
+                            <div class="section-subhead"><span>📌 Rekapitulasi 8 Kategori Layanan:</span></div>
+                            <table class="summary-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 35px;" class="col-center">No</th>
+                                        <th>Bidang Pelayanan</th>
+                                        <th style="width: 85px;" class="col-center">Jumlah Kasus</th>
+                                        <th style="width: 75px;" class="col-center">Persentase</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBodyKategori"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- 2. Sebaran Kanal Media Komunikasi -->
+                        <div>
+                            <div class="section-subhead"><span>📱 Dominasi Saluran Komunikasi (Kanal):</span></div>
+                            <table class="summary-table">
+                                <thead>
+                                    <tr>
+                                        <th>Kanal Komunikasi</th>
+                                        <th style="width: 85px;" class="col-center">Volume Masuk</th>
+                                        <th style="width: 130px;">Rasio Sebaran</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBodyKanal"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- 3. Rekapitulasi Khusus Laporan Kejadian / Darurat (Valid) -->
+                        <div>
+                            <div class="section-subhead"><span>🚨 Evaluasi Penanganan Insiden Darurat & Laka:</span></div>
+                            <table class="summary-table">
+                                <thead>
+                                    <tr>
+                                        <th>Klasifikasi Tindakan</th>
+                                        <th style="width: 85px;" class="col-center">Jumlah</th>
+                                        <th style="width: 75px;" class="col-center">Rasio</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBodyDarurat"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KOLOM KANAN: 10 TOPIK MASALAH, JAM SIBUK, SENTIMEN & KESIMPULAN -->
+                <div class="report-card">
+                    <div class="report-card-header">
+                        <span class="report-card-title red">🔥 10 Topik Masalah Terbanyak & Analisa Tren</span>
+                        <span style="font-size:10px; font-weight:800; color:#ef4444;">Anev Pimpinan</span>
+                    </div>
+                    <div class="report-card-body">
+                        <!-- 1. Tabel 10 Topik Masalah Utama -->
+                        <div>
+                            <div class="section-subhead"><span>🏆 Peringkat Topik Masalah Terbanyak:</span></div>
+                            <table class="summary-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 35px;" class="col-center">Rank</th>
+                                        <th>Pokok Masalah / Isu Aduan</th>
+                                        <th style="width: 75px;" class="col-center">Jumlah</th>
+                                        <th style="width: 70px;" class="col-center">Proporsi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBodyTopik"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- 2. Analisa Jam Sibuk (Hanya untuk stempel jam valid) -->
+                        <div>
+                            <div class="section-subhead">
+                                <span>⏰ Distribusi Waktu Aduan (Peak Hours):</span>
+                                <span id="labelKeteranganJam" style="font-size:9px; color:#64748b; font-weight:600;"></span>
+                            </div>
+                            <table class="summary-table">
+                                <thead>
+                                    <tr>
+                                        <th>Interval Waktu</th>
+                                        <th style="width: 85px;" class="col-center">Jumlah Aduan</th>
+                                        <th style="width: 120px;">Tingkat Kepadatan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBodyPeak"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- 3. Analisa Indeks Sentimen Masyarakat -->
+                        <div>
+                            <div class="section-subhead"><span>💬 Indeks Sentimen Masyarakat:</span></div>
+                            <table class="summary-table">
+                                <thead>
+                                    <tr>
+                                        <th>Persepsi Warga</th>
+                                        <th style="width: 85px;" class="col-center">Volume</th>
+                                        <th style="width: 120px;">Proporsi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBodySentimen"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- 4. Kesimpulan & Rekomendasi Taktis -->
+                        <div class="eval-note-box">
+                            <span class="eval-note-title">⚡ Kesimpulan & Arahan Operasional:</span>
+                            <div id="evalTextOperasional">Menganalisa data...</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <div class="toast" id="toastNotifier"></div>
+
+    <script>
+        const STORAGE_KEY = 'rtmc_aduan_data';
+        let allData = [];
+        let filteredData = [];
+        let datePicker;
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastNotifier');
+            toast.innerText = msg;
+            toast.classList.add('active');
+            setTimeout(() => { toast.classList.remove('active'); }, 3000);
+        }
+
+        function ekstrakIntiTopik(pertanyaan, kategori) {
+            let text = (pertanyaan || "").toLowerCase();
+            if (text.includes("pemutihan")) return "Pemutihan Denda Pajak";
+            if (text.includes("jadwal") || text.includes("lokasi") || text.includes("dimana")) {
+                if (text.includes("simling") || text.includes("keliling") || text.includes("sim")) return "Lokasi SIM Keliling";
+                if (text.includes("samsat")) return "Jadwal Samsat Keliling";
+                return "Lokasi & Jadwal Layanan";
+            }
+            if (text.includes("syarat") || text.includes("biaya") || text.includes("bikin") || text.includes("perpanjang")) {
+                if (text.includes("sim")) return "Syarat & Biaya SIM";
+                if (text.includes("stnk") || text.includes("pajak")) return "Prosedur Pajak & STNK";
+                return "Syarat Administrasi";
+            }
+            if (text.includes("etle") || text.includes("tilang") || text.includes("briva") || text.includes("blokir")) return "Konfirmasi & Buka Blokir ETLE";
+            if (text.includes("mutasi") || text.includes("balik nama")) return "Mutasi & Balik Nama Kendaraan";
+            if (text.includes("macet") || text.includes("kecelakaan") || text.includes("laka") || text.includes("tol")) return "Laporan Insiden Lalin / Macet";
+            let kat = (kategori || "").toUpperCase();
+            if (kat === "LAIN" || kat === "") return "Informasi Umum Layanan";
+            return "Layanan " + kat;
+        }
+
+        function loadStorageData() {
+            let rawStr = localStorage.getItem(STORAGE_KEY);
+            if (rawStr) {
+                try { allData = JSON.parse(rawStr); } catch (e) { allData = []; }
+            } else {
+                allData = [];
+            }
+            applyFilters();
+        }
+
+        function applyFilters() {
+            let dateRange = document.getElementById("filterDateRange").value;
+            let startDate = null;
+            let endDate = null;
+
+            if (dateRange) {
+                let parts = dateRange.split(" to ");
+                startDate = parts[0];
+                endDate = parts.length > 1 ? parts[1] : parts[0];
+                document.getElementById('labelPeriodeFilter').innerText = `Periode: ${startDate} s/d ${endDate}`;
+            } else {
+                document.getElementById('labelPeriodeFilter').innerText = "Menampilkan Seluruh Periode Arsip";
+            }
+
+            let mediaVal = document.getElementById("filterMedia").value.toUpperCase();
+            let katVal = document.getElementById("filterKategori").value.toUpperCase();
+
+            filteredData = allData.filter(row => {
+                let rowDate = (row.tanggal || "").split(" ")[0];
+                let dateMatch = true;
+
+                if (startDate && endDate) {
+                    dateMatch = (rowDate >= startDate && rowDate <= endDate);
+                } else if (startDate) {
+                    dateMatch = (rowDate === startDate);
+                }
+
+                let rowSumber = (row.sumber_media || "").toUpperCase();
+                let rowTopik = (row.topik || "").toUpperCase();
+
+                return dateMatch &&
+                       (!mediaVal || rowSumber.includes(mediaVal)) &&
+                       (!katVal || rowTopik.includes(katVal));
+            });
+
+            renderResumeAnev();
+        }
+
+        function resetFilters() {
+            const now = new Date();
+            const todayStr = now.toISOString().slice(0, 10);
+            const past7 = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+            datePicker.setDate([past7, todayStr], true);
+
+            document.getElementById("filterMedia").value = "";
+            document.getElementById("filterKategori").value = "";
+            applyFilters();
+        }
+
+        let computedReport = {};
+
+        function renderResumeAnev() {
+            computedReport = {
+                total: filteredData.length,
+                info: 0,
+                pengaduan: 0,
+                darurat: { total: 0, selesai: 0, pending: 0 },
+                handled: 0,
+                sentimen: { positif: 0, netral: 0, negatif: 0 },
+                categories: { sim: 0, stnk: 0, bpkb: 0, samsat: 0, etle: 0, tilang: 0, pjr: 0, lain: 0 },
+                channels: { "WhatsApp CS": 0, "ChatBot SAKTI": 0, "Hotline Telp": 0, "Instagram DM": 0, "TikTok DM": 0 },
+                topTopics: [],
+                hasValidTimeCount: 0,
+                peakHours: Array(24).fill(0),
+                peakIntervals: { "Dini Hari (00:00 - 06:00)": 0, "Pagi Hari (06:00 - 12:00)": 0, "Siang - Sore (12:00 - 18:00)": 0, "Malam Hari (18:00 - 24:00)": 0 }
+            };
+
+            filteredData.forEach(row => {
+                let teks = (row.pertanyaan || "").toLowerCase();
+                let jawaban = (row.jawaban || "").trim();
+                let isHandled = jawaban !== "";
+                if (isHandled) computedReport.handled++;
+
+                // 1. Sentimen Objektif
+                let sentimenExplicit = (row.sentimen || "").toLowerCase();
+                let isPositif = sentimenExplicit.includes("positif") || teks.includes("terima") || teks.includes("mantap") || teks.includes("cepat") || teks.includes("apresiasi") || teks.includes("ramah");
+                let isNegatif = sentimenExplicit.includes("negatif") || teks.includes("kecewa") || teks.includes("lama") || teks.includes("lambat") || teks.includes("susah") || teks.includes("komplain") || teks.includes("pungli");
+
+                if (isPositif) computedReport.sentimen.positif++;
+                else if (isNegatif) computedReport.sentimen.negatif++;
+                else computedReport.sentimen.netral++;
+
+                // 2. Klasifikasi Laporan Darurat Nyata
+                let katUpper = (row.topik || "").toUpperCase();
+                let tipeUpper = (row.tipe_laporan || "").toUpperCase();
+                let isIncidentText = teks.includes("kecelakaan") || teks.includes("laka") || teks.includes("truk terguling") || teks.includes("tabrakan") || teks.includes("macet total") || teks.includes("pohon tumbang");
+                let isDarurat = (tipeUpper === "DARURAT") || katUpper.includes("LAKA") || katUpper.includes("PJR") || isIncidentText;
+
+                if (isDarurat) {
+                    computedReport.darurat.total++;
+                    if (isHandled) computedReport.darurat.selesai++;
+                    else computedReport.darurat.pending++;
+                } else if (isNegatif) {
+                    computedReport.pengaduan++;
+                } else {
+                    computedReport.info++;
+                }
+
+                // 3. Kanal
+                let sm = (row.sumber_media || "").toLowerCase();
+                if (sm.includes("bot")) computedReport.channels["ChatBot SAKTI"]++;
+                else if (sm.includes("wa") || sm.includes("chat")) computedReport.channels["WhatsApp CS"]++;
+                else if (sm.includes("hot") || sm.includes("tel")) computedReport.channels["Hotline Telp"]++;
+                else if (sm.includes("tik")) computedReport.channels["TikTok DM"]++;
+                else if (sm.includes("ig") || sm.includes("inst")) computedReport.channels["Instagram DM"]++;
+                else computedReport.channels["WhatsApp CS"]++;
+
+                // 4. Kategori
+                let rawKat = (row.topik || "").toLowerCase();
+                let kat = "lain";
+                if (rawKat.includes("tilang")) kat = "tilang";
+                else if (rawKat.includes("sim")) kat = "sim";
+                else if (rawKat.includes("stnk")) kat = "stnk";
+                else if (rawKat.includes("bpkb")) kat = "bpkb";
+                else if (rawKat.includes("samsat")) kat = "samsat";
+                else if (rawKat.includes("etle")) kat = "etle";
+                else if (rawKat.includes("pjr") || rawKat.includes("laka") || rawKat.includes("patwal") || rawKat.includes("tol")) kat = "pjr";
+                if (computedReport.categories.hasOwnProperty(kat)) computedReport.categories[kat]++;
+
+                // 5. Jam Sibuk (Hanya untuk stempel waktu valid)
+                let timeMatch = (row.tanggal || "").match(/\s(\d{1,2}):/);
+                if (timeMatch && timeMatch[1]) {
+                    let h = parseInt(timeMatch[1]);
+                    if (h >= 0 && h <= 23) {
+                        computedReport.peakHours[h]++;
+                        computedReport.hasValidTimeCount++;
+                        if (h < 6) computedReport.peakIntervals["Dini Hari (00:00 - 06:00)"]++;
+                        else if (h < 12) computedReport.peakIntervals["Pagi Hari (06:00 - 12:00)"]++;
+                        else if (h < 18) computedReport.peakIntervals["Siang - Sore (12:00 - 18:00)"]++;
+                        else computedReport.peakIntervals["Malam Hari (18:00 - 24:00)"]++;
+                    }
+                }
+
+                // 6. Topik
+                let inti = ekstrakIntiTopik(row.pertanyaan, kat);
+                let f = computedReport.topTopics.find(t => t.text === inti);
+                if (f) f.count++; else computedReport.topTopics.push({ text: inti, count: 1 });
+            });
+
+            // Update 5 Kartu Mini KPI Atas
+            document.getElementById('kpiTotal').innerText = computedReport.total;
+            document.getElementById('kpiInfo').innerText = computedReport.info;
+            document.getElementById('kpiPengaduan').innerText = computedReport.pengaduan;
+            let slaRate = computedReport.total === 0 ? 0 : Math.round((computedReport.handled / computedReport.total) * 100);
+            document.getElementById('kpiSla').innerText = slaRate + '%';
+            document.getElementById('kpiDarurat').innerText = computedReport.darurat.total + " Lap";
+
+            let totalSample = computedReport.total || 1;
+
+            // 1. Render Tabel 8 Kategori Layanan
+            const tbodyKat = document.getElementById('tableBodyKategori');
+            tbodyKat.innerHTML = '';
+            const katList = [
+                { id: "sim", name: "Layanan SIM (Penerbitan & SIM Keliling)" },
+                { id: "stnk", name: "Layanan STNK & Pajak Ranmor" },
+                { id: "bpkb", name: "Layanan BPKB & Registrasi" },
+                { id: "samsat", name: "Pelayanan Samsat Induk / Keliling" },
+                { id: "etle", name: "Konfirmasi & Blokir Tilang ETLE" },
+                { id: "tilang", name: "Penegakan Hukum & Tilang Manual" },
+                { id: "pjr", name: "Laka Lantas, Jalan Tol & Patroli PJR" },
+                { id: "lain", name: "Informasi Prosedur Umum & Lain-lain" }
+            ];
+
+            katList.forEach((k, idx) => {
+                let cnt = computedReport.categories[k.id] || 0;
+                let pct = Math.round((cnt / totalSample) * 100);
+                tbodyKat.innerHTML += `
+                    <tr>
+                        <td class="col-center">${idx + 1}</td>
+                        <td>${k.name}</td>
+                        <td class="col-center"><b>${cnt}</b> Kasus</td>
+                        <td class="col-center">${pct}%</td>
+                    </tr>
+                `;
+            });
+
+            // 2. Render Tabel Kanal Komunikasi
+            const tbodyKanal = document.getElementById('tableBodyKanal');
+            tbodyKanal.innerHTML = '';
+            for (const [chName, chCount] of Object.entries(computedReport.channels)) {
+                let pct = Math.round((chCount / totalSample) * 100);
+                tbodyKanal.innerHTML += `
+                    <tr>
+                        <td><b>${chName}</b></td>
+                        <td class="col-center">${chCount} Aduan</td>
+                        <td>
+                            <div style="display:flex; justify-content:space-between; font-size:9.5px; margin-bottom:2px;">
+                                <span>${pct}%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${pct}%; background:#1d4ed8;"></div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // 3. Render Evaluasi Insiden Kejadian / Darurat Nyata
+            const tbodyDarurat = document.getElementById('tableBodyDarurat');
+            tbodyDarurat.innerHTML = '';
+            let dTotal = computedReport.darurat.total;
+            let dSelesai = computedReport.darurat.selesai;
+            let dPending = computedReport.darurat.pending;
+            let dSelesaiPct = dTotal === 0 ? 0 : Math.round((dSelesai / dTotal) * 100);
+            let dPendingPct = dTotal === 0 ? 0 : Math.round((dPending / dTotal) * 100);
+
+            tbodyDarurat.innerHTML = `
+                <tr>
+                    <td>Total Insiden Darurat (Laka / Kemacetan Tol)</td>
+                    <td class="col-center"><b>${dTotal}</b> Kasus</td>
+                    <td class="col-center">100%</td>
+                </tr>
+                <tr>
+                    <td style="color:#15803d;">✓ Berhasil Ditangani & Diteruskan Unit</td>
+                    <td class="col-center" style="color:#15803d;"><b>${dSelesai}</b> Kasus</td>
+                    <td class="col-center" style="color:#15803d;">${dSelesaiPct}%</td>
+                </tr>
+                <tr>
+                    <td style="color:#dc2626;">⏳ Dalam Penanganan / Menunggu Arahan</td>
+                    <td class="col-center" style="color:#dc2626;"><b>${dPending}</b> Kasus</td>
+                    <td class="col-center" style="color:#dc2626;">${dPendingPct}%</td>
+                </tr>
+            `;
+
+            // 4. Render Tabel 10 Topik Masalah Terbanyak
+            computedReport.topTopics.sort((a, b) => b.count - a.count);
+            const tbodyTopik = document.getElementById('tableBodyTopik');
+            tbodyTopik.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                if (computedReport.topTopics[i]) {
+                    let item = computedReport.topTopics[i];
+                    let pct = Math.round((item.count / totalSample) * 100);
+                    tbodyTopik.innerHTML += `
+                        <tr>
+                            <td class="col-center"><b>#${i + 1}</b></td>
+                            <td>${item.text}</td>
+                            <td class="col-center"><b>${item.count}</b></td>
+                            <td class="col-center">${pct}%</td>
+                        </tr>
+                    `;
+                }
+            }
+
+            // 5. Render Distribusi Waktu Jam Sibuk
+            const tbodyPeak = document.getElementById('tableBodyPeak');
+            tbodyPeak.innerHTML = '';
+            let validTimeSample = computedReport.hasValidTimeCount;
+
+            if (validTimeSample === 0) {
+                document.getElementById('labelKeteranganJam').innerText = "(Data bersumber rekap harian tanpa stempel jam)";
+                tbodyPeak.innerHTML = `<tr><td colspan="3" class="col-center" style="color:#94a3b8; padding:12px;">Data pada filter ini belum dilengkapi pencatatan jam kejadian.</td></tr>`;
+            } else {
+                document.getElementById('labelKeteranganJam').innerText = `(${validTimeSample} data berstempel jam)`;
+                for (const [intervalName, cnt] of Object.entries(computedReport.peakIntervals)) {
+                    let pct = Math.round((cnt / validTimeSample) * 100);
+                    tbodyPeak.innerHTML += `
+                        <tr>
+                            <td><b>${intervalName}</b></td>
+                            <td class="col-center">${cnt} Aduan</td>
+                            <td>
+                                <div style="display:flex; justify-content:space-between; font-size:9.5px; margin-bottom:2px;">
+                                    <span>${pct}%</span>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" style="width: ${pct}%; background:#f59e0b;"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+
+            // 6. Render Indeks Sentimen Masyarakat
+            const tbodySentimen = document.getElementById('tableBodySentimen');
+            tbodySentimen.innerHTML = '';
+            let sPos = computedReport.sentimen.positif;
+            let sNet = computedReport.sentimen.netral;
+            let sNeg = computedReport.sentimen.negatif;
+            let sPosPct = Math.round((sPos / totalSample) * 100);
+            let sNetPct = Math.round((sNet / totalSample) * 100);
+            let sNegPct = Math.round((sNeg / totalSample) * 100);
+
+            tbodySentimen.innerHTML = `
+                <tr>
+                    <td style="color:#16a34a;"><b>Positif / Apresiasi Pelayanan</b></td>
+                    <td class="col-center"><b>${sPos}</b></td>
+                    <td>
+                        <div style="display:flex; justify-content:space-between; font-size:9.5px;"><span>${sPosPct}%</span></div>
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${sPosPct}%; background:#16a34a;"></div></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="color:#d97706;"><b>Netral / Informasi & Prosedur</b></td>
+                    <td class="col-center"><b>${sNet}</b></td>
+                    <td>
+                        <div style="display:flex; justify-content:space-between; font-size:9.5px;"><span>${sNetPct}%</span></div>
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${sNetPct}%; background:#f59e0b;"></div></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="color:#dc2626;"><b>Negatif / Komplain & Keluhan</b></td>
+                    <td class="col-center"><b>${sNeg}</b></td>
+                    <td>
+                        <div style="display:flex; justify-content:space-between; font-size:9.5px;"><span>${sNegPct}%</span></div>
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${sNegPct}%; background:#ef4444;"></div></div>
+                    </td>
+                </tr>
+            `;
+
+            // 7. Kesimpulan Taktis Otomatis
+            let maxHour = 0, maxHourVal = 0;
+            computedReport.peakHours.forEach((v, h) => {
+                if (v > maxHourVal) { maxHourVal = v; maxHour = h; }
+            });
+            let peakStr = validTimeSample > 0 ? `${maxHour.toString().padStart(2, '0')}:00 - ${(maxHour+1).toString().padStart(2, '0')}:00 WIB` : "Merata sepanjang hari";
+            let topTopicName = computedReport.topTopics.length > 0 ? computedReport.topTopics[0].text : "Nihil";
+
+            document.getElementById('evalTextOperasional').innerHTML = `
+                Berdasarkan sampling <b>${computedReport.total} aduan</b>, atensi terbanyak masyarakat terfokus pada isu <b>"${topTopicName}"</b>. 
+                Puncak laporan terpantau pada <b>${peakStr}</b>. Indeks sentimen didominasi respon bernada <b>${sNetPct >= sNegPct ? 'Informasi Prosedural' : 'Keluhan Pelayanan'}</b>. Dari <b>${dTotal} laporan darurat/laka</b>, tercatat rasio penanganan sebesar <b>${dSelesaiPct}%</b>. Jajaran piket diimbau menjaga kesiapsiagaan respon guna mempertahankan target SLA Presisi.
+            `;
+        }
+
+        // ================= FITUR EKSPOR EKSEKUTIF LENGKAP ================= //
+
+        function exportExcel() {
+            if (computedReport.total === 0) {
+                alert("Data kosong untuk diekspor.");
+                return;
+            }
+
+            const workbook = XLSX.utils.book_new();
+            const totalSample = computedReport.total || 1;
+
+            // Sheet 1: Kategori Layanan
+            const katData = Object.entries(computedReport.categories).map(([k, v], idx) => ({
+                "No": idx + 1,
+                "Bidang Pelayanan": k.toUpperCase(),
+                "Jumlah Kasus": v,
+                "Persentase": Math.round((v / totalSample) * 100) + " %"
+            }));
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(katData), "Kategori Layanan");
+
+            // Sheet 2: 10 Topik Masalah Terbanyak
+            const topicData = computedReport.topTopics.slice(0, 10).map((t, idx) => ({
+                "Peringkat": idx + 1,
+                "Pokok Masalah / Isu Aduan": t.text,
+                "Volume Laporan": t.count,
+                "Proporsi": Math.round((t.count / totalSample) * 100) + " %",
+                "Tingkat Atensi": idx < 3 ? "PRIORITAS TINGGI" : "MONITORING"
+            }));
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(topicData), "Top 10 Isu");
+
+            // Sheet 3: Sebaran Kanal Komunikasi
+            const chData = Object.entries(computedReport.channels).map(([ch, cnt]) => ({
+                "Saluran Media": ch,
+                "Volume Aduan": cnt,
+                "Rasio Sebaran": Math.round((cnt / totalSample) * 100) + " %"
+            }));
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(chData), "Sebaran Kanal");
+
+            // Sheet 4: Peak Hours & Sentimen
+            const peakData = Object.entries(computedReport.peakIntervals).map(([inter, cnt]) => ({
+                "Interval Waktu": inter,
+                "Jumlah Aduan": cnt,
+                "Rasio": Math.round((cnt / (computedReport.hasValidTimeCount || 1)) * 100) + " %"
+            }));
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(peakData), "Jam Sibuk");
+
+            const sentData = [
+                { "Persepsi": "Positif / Apresiasi", "Volume": computedReport.sentimen.positif, "Persentase": Math.round((computedReport.sentimen.positif / totalSample) * 100) + " %" },
+                { "Persepsi": "Netral / Info Prosedur", "Volume": computedReport.sentimen.netral, "Persentase": Math.round((computedReport.sentimen.netral / totalSample) * 100) + " %" },
+                { "Persepsi": "Negatif / Keluhan", "Volume": computedReport.sentimen.negatif, "Persentase": Math.round((computedReport.sentimen.negatif / totalSample) * 100) + " %" }
+            ];
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(sentData), "Indeks Sentimen");
+
+            // Sheet 5: Insiden Darurat & Laka
+            const daruratData = [
+                { "Klasifikasi": "Total Insiden Darurat", "Jumlah": computedReport.darurat.total, "Rasio": "100 %" },
+                { "Klasifikasi": "Berhasil Ditangani Unit", "Jumlah": computedReport.darurat.selesai, "Rasio": Math.round((computedReport.darurat.selesai / (computedReport.darurat.total || 1)) * 100) + " %" },
+                { "Klasifikasi": "Dalam Penanganan / Pending", "Jumlah": computedReport.darurat.pending, "Rasio": Math.round((computedReport.darurat.pending / (computedReport.darurat.total || 1)) * 100) + " %" }
+            ];
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(daruratData), "Insiden Darurat");
+
+            XLSX.writeFile(workbook, `Resume_Anev_Eksekutif_Lengkap_${new Date().toISOString().slice(0,10)}.xlsx`);
+            showToast("✓ Laporan Excel Agregat Lengkap berhasil diunduh!");
+        }
+
+        function exportPDF() {
+            if (computedReport.total === 0) {
+                alert("Data laporan kosong.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const totalSample = computedReport.total || 1;
+
+            doc.setFontSize(13);
+            doc.text("DITLANTAS POLDA JAWA TIMUR", 105, 14, { align: "center" });
+            doc.setFontSize(11);
+            doc.text("RESUME EKSEKUTIF ANALISA & EVALUASI PELAYANAN RTMC", 105, 20, { align: "center" });
+            doc.setFontSize(8.5);
+            doc.text(`Waktu Cetak: ${new Date().toLocaleString('id-ID')} | Total Aduan: ${computedReport.total} Laporan | SLA: ${Math.round((computedReport.handled / totalSample) * 100)}%`, 105, 26, { align: "center" });
+            doc.line(14, 29, 196, 29);
+
+            // Tabel 1: Top 10 Masalah
+            doc.setFontSize(9.5);
+            doc.text("I. TOP 10 ISU PRIORITAS MASYARAKAT", 14, 35);
+            const topicRows = computedReport.topTopics.slice(0, 10).map((t, idx) => [
+                idx + 1,
+                t.text,
+                t.count + " Laporan",
+                Math.round((t.count / totalSample) * 100) + " %",
+                idx < 3 ? "PRIORITAS" : "MONITORING"
+            ]);
+            doc.autoTable({
+                head: [["Rank", "Pokok Isu / Permasalahan", "Volume", "Proporsi", "Tingkat Atensi"]],
+                body: topicRows,
+                startY: 38,
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [220, 38, 38], halign: 'center' },
+                columnStyles: { 0: { cellWidth: 14, halign: 'center' }, 2: { cellWidth: 28, halign: 'center' }, 3: { cellWidth: 24, halign: 'center' }, 4: { cellWidth: 28, halign: 'center' } }
+            });
+
+            // Tabel 2: 8 Kategori Layanan
+            let currentY = doc.lastAutoTable.finalY + 8;
+            doc.setFontSize(9.5);
+            doc.text("II. REKAPITULASI 8 BIDANG PELAYANAN LALU LINTAS", 14, currentY);
+            const katRows = Object.entries(computedReport.categories).map(([k, v], idx) => [
+                idx + 1,
+                k.toUpperCase(),
+                v + " Kasus",
+                Math.round((v / totalSample) * 100) + " %"
+            ]);
+            doc.autoTable({
+                head: [["No", "Bidang Layanan", "Jumlah", "Persentase"]],
+                body: katRows,
+                startY: currentY + 3,
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [29, 78, 216], halign: 'center' },
+                columnStyles: { 0: { cellWidth: 14, halign: 'center' }, 2: { cellWidth: 35, halign: 'center' }, 3: { cellWidth: 30, halign: 'center' } }
+            });
+
+            // Tabel 3: Peak Hours & Insiden Darurat
+            currentY = doc.lastAutoTable.finalY + 8;
+            doc.setFontSize(9.5);
+            doc.text("III. JAM SIBUK ADUAN & EVALUASI INSIDEN DARURAT", 14, currentY);
+            
+            const summaryRows = [
+                ["Dini Hari (00:00 - 06:00)", computedReport.peakIntervals["Dini Hari (00:00 - 06:00)"] + " Aduan", "Total Insiden Darurat / Laka", computedReport.darurat.total + " Kasus"],
+                ["Pagi Hari (06:00 - 12:00)", computedReport.peakIntervals["Pagi Hari (06:00 - 12:00)"] + " Aduan", "Insiden Berhasil Ditangani", computedReport.darurat.selesai + " Kasus"],
+                ["Siang - Sore (12:00 - 18:00)", computedReport.peakIntervals["Siang - Sore (12:00 - 18:00)"] + " Aduan", "Insiden Dalam Penanganan", computedReport.darurat.pending + " Kasus"],
+                ["Malam Hari (18:00 - 24:00)", computedReport.peakIntervals["Malam Hari (18:00 - 24:00)"] + " Aduan", "Tingkat Sentimen Negatif/Keluhan", Math.round((computedReport.sentimen.negatif / totalSample) * 100) + " %"]
+            ];
+            doc.autoTable({
+                head: [["Distribusi Waktu (Peak Hours)", "Volume", "Evaluasi Kejadian Darurat", "Keterangan"]],
+                body: summaryRows,
+                startY: currentY + 3,
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [71, 85, 105], halign: 'center' },
+                columnStyles: { 0: { cellWidth: 50 }, 1: { cellWidth: 35, halign: 'center' }, 2: { cellWidth: 55 }, 3: { cellWidth: 35, halign: 'center' } }
+            });
+
+            // Catatan Pimpinan
+            let finalY = doc.lastAutoTable.finalY + 8;
+            doc.setFontSize(9);
+            doc.text("IV. REKOMENDASI TAKTIS OPERASIONAL PIMPINAN:", 14, finalY);
+            doc.setFontSize(8);
+            doc.text(`1. Isu prioritas (${computedReport.topTopics.length > 0 ? computedReport.topTopics[0].text : '-'}) membutuhkan sosialisasi dan edukasi publik intensif.`, 14, finalY + 4.5);
+            doc.text(`2. Kesiapsiagaan patroli PJR dan pengurai kemacetan ditingkatkan pada jam-jam puncak aduan masyarakat.`, 14, finalY + 9);
+            doc.text(`3. Mempertahankan respon cepat laporan darurat guna menjaga akuntabilitas pelayanan publik Ditlantas Polda Jatim.`, 14, finalY + 13.5);
+
+            doc.save(`Resume_Eksekutif_Anev_RTMC_${new Date().toISOString().slice(0,10)}.pdf`);
+            showToast("✓ Dokumen PDF Resume Eksekutif berhasil diunduh!");
+        }
+
+        function exportTopikKhususPDF() {
+            if (computedReport.total === 0) {
+                alert("Data laporan kosong.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const totalSample = computedReport.total || 1;
+
+            doc.setFontSize(14);
+            doc.text("DITLANTAS POLDA JAWA TIMUR", 105, 16, { align: "center" });
+            doc.setFontSize(11);
+            doc.text("RTMC COMMAND CENTER - RESUME 10 TOPIK MASALAH UTAMA", 105, 23, { align: "center" });
+            doc.setFontSize(8.5);
+            doc.text(`Waktu Cetak: ${new Date().toLocaleString('id-ID')} | Total Volume Aduan: ${computedReport.total} Laporan`, 105, 29, { align: "center" });
+            doc.line(14, 32, 196, 32);
+
+            const topicRows = computedReport.topTopics.slice(0, 10).map((t, idx) => {
+                let pct = Math.round((t.count / totalSample) * 100);
+                return [
+                    idx + 1,
+                    t.text,
+                    t.count + " Aduan",
+                    pct + " %",
+                    idx < 3 ? "PRIORITAS TINGGI" : "MONITORING"
+                ];
+            });
+
+            doc.autoTable({
+                head: [["Peringkat", "Topik / Pokok Permasalahan", "Volume Laporan", "Persentase", "Tingkat Atensi"]],
+                body: topicRows,
+                startY: 38,
+                styles: { fontSize: 9, cellPadding: 3.5 },
+                headStyles: { fillColor: [220, 38, 38], halign: 'center' },
+                columnStyles: {
+                    0: { halign: 'center', cellWidth: 20 },
+                    2: { halign: 'center', cellWidth: 32 },
+                    3: { halign: 'center', cellWidth: 24 },
+                    4: { halign: 'center', cellWidth: 35 }
+                }
+            });
+
+            let finalY = doc.lastAutoTable.finalY + 12;
+            doc.setFontSize(10);
+            doc.text("Catatan & Rekomendasi Tindak Lanjut Pimpinan:", 14, finalY);
+            doc.setFontSize(8.5);
+            doc.text("1. Isu peringkat 1 sampai 3 memerlukan respon taktis personel lapangan dan peningkatan edukasi publik media sosial.", 14, finalY + 6);
+            doc.text("2. Seluruh jajaran operator piket wajib merespon cepat laporan pending guna menjaga target SLA Presisi.", 14, finalY + 11);
+
+            doc.save(`Top_10_Topik_Masalah_RTMC_${new Date().toISOString().slice(0,10)}.pdf`);
+            showToast("✓ Laporan Khusus 10 Topik Masalah berhasil diunduh!");
+        }
+
+        window.onload = function() {
+            const now = new Date();
+            const todayStr = now.toISOString().slice(0, 10);
+            const past7 = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+
+            datePicker = flatpickr("#filterDateRange", {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "d M Y",
+                defaultDate: [past7, todayStr],
+                onChange: function(dates) {
+                    if (dates.length === 2 || dates.length === 0) {
+                        applyFilters();
+                    }
+                }
+            });
+
+            loadStorageData();
+        };
+    </script>
+</body>
+</html>

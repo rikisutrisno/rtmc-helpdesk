@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Laporan - RTMC Help-Desk</title>
+    
+    <!-- Library Excel & PDF -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Flatpickr Datepicker -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        html, body { height: 100vh; width: 100vw; overflow: hidden; background-color: #f8fafc; color: #0f172a; }
+
+        .app-container { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+
+        /* SIDEBAR IDENTIK */
+        .sidebar { width: 210px; background-color: #ffffff; border-right: 1px solid #e2e8f0; padding: 14px 12px; display: flex; flex-direction: column; justify-content: space-between; flex-shrink: 0; }
+        .logo-box { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9; }
+        .logo-box img { width: 36px; height: auto; }
+        .logo-title h1 { font-size: 13px; font-weight: 800; color: #0f172a; letter-spacing: 0.5px; line-height: 1.2; }
+        .logo-title p { font-size: 8.5px; font-weight: 600; color: #64748b; }
+
+        .nav-menu { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-top: 14px; }
+        .nav-item a { display: flex; align-items: center; gap: 8px; padding: 9px 12px; color: #64748b; text-decoration: none; font-size: 12px; font-weight: 600; border-radius: 6px; transition: all 0.15s; }
+        .nav-item.active a { background-color: #eff6ff; color: #1d4ed8; font-weight: 700; }
+        .nav-item a:hover { background-color: #f8fafc; color: #0f172a; }
+        .sidebar-footer { font-size: 9px; color: #94a3b8; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 10px; font-weight: 600; }
+
+        /* MAIN CONTENT */
+        .main-wrapper { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; padding: 10px 14px; gap: 8px; }
+
+        .top-header { display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 6px 14px; border-radius: 8px; border: 1px solid #e2e8f0; height: 46px; flex-shrink: 0; }
+        .header-title-text h2 { font-size: 13.5px; font-weight: 800; color: #0f172a; }
+        .header-title-text span { font-size: 11px; color: #64748b; font-weight: 500; }
+        
+        .header-actions { display: flex; align-items: center; gap: 8px; }
+        .btn-header { padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; border: none; cursor: pointer; transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 5px; position: relative; overflow: hidden; }
+        .btn-header:hover { opacity: 0.9; }
+        .btn-template { background: #1d4ed8; color: #ffffff; border: 1px solid #1e40af; }
+        .btn-import { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .btn-clear { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+        .btn-pdf { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+        .btn-reset { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        #excelFileInput { position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+
+        .content-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; flex-grow: 1; display: flex; flex-direction: column; padding: 12px; min-height: 0; }
+
+        /* FILTER TOOLBAR */
+        .filter-toolbar { display: grid; grid-template-columns: 180px 140px 130px 130px 140px 1fr; gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
+        .filter-input { padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; font-size: 11px; outline: none; font-weight: 500; }
+        .filter-input:focus { border-color: #1d4ed8; }
+
+        .meta-counter { font-size: 11px; color: #64748b; font-weight: 700; margin-bottom: 8px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
+
+        /* TABLE VIEW WITH INTERNAL SCROLL */
+        .table-scroll { flex-grow: 1; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; min-height: 0; }
+        .table-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        .table-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: #f8fafc; color: #475569; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; padding: 9px 12px; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 5; }
+        td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 11.5px; vertical-align: top; color: #1e293b; }
+        tr:hover td { background-color: #f8fafc; }
+
+        .badge-pill { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.3px; }
+        .badge-handled { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .badge-pending { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+        .badge-source { background-color: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
+        .badge-emergency { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; font-weight: 800; }
+
+        .response-box { margin-top: 5px; padding: 5px 8px; background: #f8fafc; border-left: 2px solid #16a34a; font-size: 10.5px; color: #334155; border-radius: 0 4px 4px 0; }
+        .user-tag { font-size: 10px; color: #64748b; font-weight: 600; margin-top: 2px; }
+        .empty-indicator { text-align: center; padding: 40px; color: #94a3b8; font-size: 12px; font-style: italic; }
+
+        .toast { position: fixed; bottom: 16px; right: 16px; background: #0f172a; color: white; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 700; transform: translateY(60px); opacity: 0; transition: all 0.25s; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .toast.active { transform: translateY(0); opacity: 1; }
+        .toast.error { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div>
+                <div class="logo-box">
+                    <img src="logo-rtmc.png" alt="Logo RTMC" onerror="this.src='https://placehold.co/40x40?text=POLRI'">
+                    <div class="logo-title">
+                        <h1>RTMC HELP-DESK</h1>
+                        <p>Command Center Dashboard</p>
+                    </div>
+                </div>
+                <ul class="nav-menu">
+                    <li class="nav-item"><a href="index.html">Dashboard</a></li>
+                    <li class="nav-item active"><a href="#">Database</a></li>
+                    <li class="nav-item"><a href="rekap.html">Laporan</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-footer">
+                DITLANTAS POLDA JATIM<br>Presisi Command Center
+            </div>
+        </aside>
+
+        <!-- MAIN VIEW -->
+        <main class="main-wrapper">
+            <header class="top-header">
+                <div class="header-title-text">
+                    <h2>Database & Arsip Laporan Masyarakat</h2>
+                </div>
+                <div class="header-actions">
+                    <!-- TOMBOL DOWNLOAD FORMAT BAKU EXCEL -->
+                    <button class="btn-header btn-template" onclick="downloadTemplateExcel()" title="Unduh Berkas Excel Format Resmi">
+                        📥 Download Format Excel
+                    </button>
+                    
+                    <!-- TOMBOL IMPORT EXCEL -->
+                    <div class="btn-header btn-import">
+                        📁 Import Excel
+                        <input type="file" id="excelFileInput" accept=".xlsx, .xls" onchange="handleExcelImport(event)">
+                    </div>
+                    <button class="btn-header btn-clear" onclick="resetDatabase()">Kosongkan Data</button>
+                    <button class="btn-header btn-pdf" onclick="generatePDF()">📄 Export PDF</button>
+                    <button class="btn-header btn-reset" onclick="resetFilters()">🔄 Reset Filter</button>
+                </div>
+            </header>
+
+            <div class="content-card">
+                <!-- FILTER TOOLBAR -->
+                <div class="filter-toolbar">
+                    <input type="text" id="filterDateRange" class="filter-input" placeholder="Rentang Tanggal...">
+                    
+                    <select id="filterTipe" class="filter-input" onchange="filterTable()">
+                        <option value="">Semua Tipe</option>
+                        <option value="DARURAT">🚨 Laporan Darurat / Laka</option>
+                        <option value="REGULER">📋 Aduan Reguler</option>
+                    </select>
+
+                    <select id="filterSumber" class="filter-input" onchange="filterTable()">
+                        <option value="">Semua Kanal</option>
+                        <option value="WHATSAPP">WhatsApp CS</option>
+                        <option value="INSTAGRAM">Instagram DM</option>
+                        <option value="TIKTOK">TikTok DM</option>
+                        <option value="FACEBOOK">Facebook</option>
+                        <option value="BOT">ChatBot SAKTI</option>
+                        <option value="HOTLINE">Hotline Telp</option>
+                    </select>
+
+                    <select id="filterKategori" class="filter-input" onchange="filterTable()">
+                        <option value="">Semua Kategori</option>
+                        <option value="SIM">SIM</option>
+                        <option value="STNK">STNK</option>
+                        <option value="BPKB">BPKB</option>
+                        <option value="SAMSAT">Samsat</option>
+                        <option value="ETLE">ETLE</option>
+                        <option value="TILANG">Tilang</option>
+                        <option value="PJR">Laka / PJR</option>
+                        <option value="LAIN">Lain-lain</option>
+                    </select>
+
+                    <select id="filterStatus" class="filter-input" onchange="filterTable()">
+                        <option value="">Semua Status Respon</option>
+                        <option value="SELESAI">✓ Selesai / Terjawab</option>
+                        <option value="MENUNGGU">⏳ Menunggu Tindak Lanjut</option>
+                    </select>
+
+                    <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Ketik kata kunci pertanyaan, nama akun, respon..." class="filter-input">
+                </div>
+
+                <div class="meta-counter">
+                    <span id="dataCountLabel">Memuat arsip laporan...</span>
+                </div>
+
+                <!-- TABLE AREA -->
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 140px;">Waktu Laporan</th>
+                                <th style="width: 140px;">Kanal & Pelapor</th>
+                                <th style="width: 110px;">Kategori</th>
+                                <th>Pertanyaan / Laporan Warga & Respon</th>
+                                <th style="width: 100px; text-align: center;">Tipe & Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr><td colspan="5" class="empty-indicator">Mengambil data dari penyimpanan lokal...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast" id="toastNotifier"></div>
+
+    <script>
+        const STORAGE_KEY = 'rtmc_aduan_data';
+        let rawData = [];
+        let filteredData = [];
+        let datePicker;
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toastNotifier');
+            toast.innerText = message;
+            if (isError) toast.classList.add('error'); else toast.classList.remove('error');
+            toast.classList.add('active');
+            setTimeout(() => { toast.classList.remove('active'); }, 3500);
+        }
+
+        // ================= FUNGSI DOWNLOAD FORMAT BAKU EXCEL LANGSUNG ================= //
+        function downloadTemplateExcel() {
+            const sampleData = [
+                {
+                    "NO": 1,
+                    "TANGGAL": "2026-09-25",
+                    "JAM": "08:30",
+                    "MEDIA ADUAN": "WHATSAPP",
+                    "NAMA / NOMOR": "Agus Tol / 081234567890",
+                    "JENIS": "LAKA / PJR",
+                    "TIPE LAPORAN": "DARURAT",
+                    "SENTIMEN": "Netral",
+                    "PERTANYAAN": "Ada kecelakaan truk terguling di jalan tol Waru Sidoarjo arah Porong, arus macet total.",
+                    "JAWABAN": "Meneruskan ke piket Arjuna Induk PJR melalui HT untuk evakuasi unit dan penguraian lalin."
+                },
+                {
+                    "NO": 2,
+                    "TANGGAL": "2026-09-25",
+                    "JAM": "09:15",
+                    "MEDIA ADUAN": "INSTAGRAM",
+                    "NAMA / NOMOR": "@andi_surabaya",
+                    "JENIS": "SIM",
+                    "TIPE LAPORAN": "REGULER",
+                    "SENTIMEN": "Netral",
+                    "PERTANYAAN": "Mohon info jadwal dan lokasi mobil SIM Keliling di wilayah Surabaya hari ini pak?",
+                    "JAWABAN": "SIM Keliling hari ini beroperasi di Taman Bungkul dan Pasar Atom pkl 08.00 - 12.00 WIB."
+                },
+                {
+                    "NO": 3,
+                    "TANGGAL": "2026-09-25",
+                    "JAM": "10:05",
+                    "MEDIA ADUAN": "HOTLINE",
+                    "NAMA / NOMOR": "Bpk. Rahmat",
+                    "JENIS": "SAMSAT",
+                    "TIPE LAPORAN": "REGULER",
+                    "SENTIMEN": "Negatif",
+                    "PERTANYAAN": "Pelayanan cek fisik samsat antreannya sangat lama dan petugas loket kurang ramah tolong ditertibkan.",
+                    "JAWABAN": "Laporan diterima dan dikoordinasikan kepada Kanit Regident Samsat setempat untuk peningkatan pengawasan loket."
+                },
+                {
+                    "NO": 4,
+                    "TANGGAL": "2026-09-25",
+                    "JAM": "11:20",
+                    "MEDIA ADUAN": "TIKTOK",
+                    "NAMA / NOMOR": "@dewi_lestari",
+                    "JENIS": "ETLE",
+                    "TIPE LAPORAN": "REGULER",
+                    "SENTIMEN": "Netral",
+                    "PERTANYAAN": "Bagaimana cara konfirmasi surat tilang ETLE jika kendaraan sudah dijual ke orang lain?",
+                    "JAWABAN": "Silakan konfirmasi melalui web etlejawatimur.info dan sertakan bukti jual beli untuk pemblokiran nopol."
+                },
+                {
+                    "NO": 5,
+                    "TANGGAL": "2026-09-25",
+                    "JAM": "13:45",
+                    "MEDIA ADUAN": "WHATSAPP",
+                    "NAMA / NOMOR": "085678901234",
+                    "JENIS": "TILANG",
+                    "TIPE LAPORAN": "REGULER",
+                    "SENTIMEN": "Positif",
+                    "PERTANYAAN": "Terima kasih pak polisi pelayanan pengambilan berkas tilang di Satlantas sangat cepat dan transparan.",
+                    "JAWABAN": "Sama-sama, terima kasih atas apresiasi Bapak/Ibu terhadap pelayanan Polri Presisi."
+                }
+            ];
+
+            const ws = XLSX.utils.json_to_sheet(sampleData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "REKAP");
+            
+            // Simpan otomatis ke folder Download komputer
+            XLSX.writeFile(wb, "FORMAT_REKAP_ADUAN_RTMC_HARIAN.xlsx");
+            showToast("✓ File format Excel berhasil diunduh ke komputer Anda!");
+        }
+
+        function loadStorageData() {
+            let data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                try { rawData = JSON.parse(data); } catch(e) { rawData = []; }
+            } else {
+                rawData = [];
+            }
+            filteredData = rawData.slice();
+            renderTable(filteredData);
+        }
+
+        function saveStorageData(arr) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            document.getElementById('dataCountLabel').innerText = `Menampilkan ${data.length} dari total ${rawData.length} data laporan`;
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-indicator">Tidak ada rekaman data yang cocok dengan filter yang dipilih.</td></tr>';
+                return;
+            }
+
+            data.slice().reverse().forEach(row => {
+                let jawaban = (row.jawaban || "").trim();
+                let isHandled = jawaban !== "";
+                let badgeClass = isHandled ? "badge-handled" : "badge-pending";
+                let badgeText = isHandled ? "✓ SELESAI" : "⏳ MENUNGGU";
+                
+                let isDarurat = (row.tipe_laporan === "DARURAT") || (row.topik === "PJR") || (row.pertanyaan || "").toLowerCase().includes("laka");
+                let emergencyTag = isDarurat ? `<div style="margin-top:4px;"><span class="badge-pill badge-emergency">🚨 DARURAT</span></div>` : '';
+
+                let responHTML = isHandled 
+                    ? `<div class="response-box"><b>Respon RTMC:</b> ${row.jawaban}</div>` 
+                    : '';
+
+                let akunHTML = row.nama_akun ? `<div class="user-tag">👤 ${row.nama_akun}</div>` : '';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="color: #64748b; font-weight: 600; font-size: 11px;">${row.tanggal || '-'}</td>
+                        <td>
+                            <span class="badge-pill badge-source">${row.sumber_media || '-'}</span>
+                            ${akunHTML}
+                        </td>
+                        <td><strong style="color: #1d4ed8; font-size: 11px;">${row.topik || 'Umum'}</strong></td>
+                        <td>
+                            <div style="font-weight: 600; line-height: 1.35;">${row.pertanyaan || '-'}</div>
+                            ${responHTML}
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="badge-pill ${badgeClass}">${badgeText}</span>
+                            ${emergencyTag}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function filterTable() {
+            let dateRange = document.getElementById("filterDateRange").value;
+            let startDate = null;
+            let endDate = null;
+
+            if (dateRange) {
+                let parts = dateRange.split(" to ");
+                startDate = parts[0];
+                endDate = parts.length > 1 ? parts[1] : parts[0];
+            }
+            
+            let tipeVal = document.getElementById("filterTipe").value;
+            let sumberVal = document.getElementById("filterSumber").value.toUpperCase();
+            let katVal = document.getElementById("filterKategori").value.toUpperCase();
+            let statusVal = document.getElementById("filterStatus").value;
+            let textVal = document.getElementById("searchInput").value.toLowerCase();
+            
+            filteredData = rawData.filter(row => {
+                let rowDate = (row.tanggal || "").split(" ")[0];
+                let dateMatch = true;
+                
+                if (startDate && endDate) {
+                    dateMatch = (rowDate >= startDate && rowDate <= endDate);
+                } else if (startDate) {
+                    dateMatch = (rowDate === startDate);
+                }
+
+                let rowSumber = (row.sumber_media || "").toUpperCase();
+                let rowTopik = (row.topik || "").toUpperCase();
+                let rowJawaban = (row.jawaban || "").trim();
+                let isHandled = rowJawaban !== "";
+
+                let isDarurat = (row.tipe_laporan === "DARURAT") || (rowTopik === "PJR") || (row.pertanyaan || "").toLowerCase().includes("laka");
+                let tipeMatch = true;
+                if (tipeVal === "DARURAT") tipeMatch = isDarurat;
+                if (tipeVal === "REGULER") tipeMatch = !isDarurat;
+
+                let statusMatch = true;
+                if (statusVal === "SELESAI") statusMatch = isHandled;
+                if (statusVal === "MENUNGGU") statusMatch = !isHandled;
+
+                let rowFullText = `${row.tanggal} ${row.sumber_media} ${row.nama_akun} ${row.topik} ${row.pertanyaan} ${row.jawaban}`.toLowerCase();
+
+                return dateMatch &&
+                       tipeMatch &&
+                       (!sumberVal || rowSumber.includes(sumberVal)) &&
+                       (!katVal || rowTopik.includes(katVal)) &&
+                       statusMatch &&
+                       (!textVal || rowFullText.includes(textVal));
+            });
+
+            renderTable(filteredData);
+        }
+
+        function resetFilters() {
+            if(datePicker) datePicker.clear();
+            document.getElementById("filterTipe").value = "";
+            document.getElementById("filterSumber").value = "";
+            document.getElementById("filterKategori").value = "";
+            document.getElementById("filterStatus").value = "";
+            document.getElementById("searchInput").value = "";
+            filteredData = rawData.slice();
+            renderTable(filteredData);
+        }
+
+        // ================= IMPORT EXCEL HARIAN ================= //
+        function handleExcelImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    let targetSheetName = workbook.SheetNames.includes('REKAP') ? 'REKAP' : workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[targetSheetName];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    if (!rows || rows.length <= 1) { 
+                        showToast("File Excel kosong atau format tidak sesuai.", true); 
+                        return; 
+                    }
+
+                    // Deteksi Baris Header Kolom
+                    let headerIndex = -1;
+                    let colMap = { tgl: -1, jam: -1, media: -1, nama: -1, jenis: -1, tipe: -1, sentimen: -1, tanya: -1, jawab: -1 };
+
+                    for (let r = 0; r < Math.min(rows.length, 10); r++) {
+                        let row = rows[r];
+                        if (!row) continue;
+                        for (let c = 0; c < row.length; c++) {
+                            let val = String(row[c] || '').toUpperCase().trim();
+                            if (val.includes('TANGGAL')) colMap.tgl = c;
+                            if (val.includes('JAM') || val.includes('WAKTU') || val.includes('PUKUL')) colMap.jam = c;
+                            if (val.includes('MEDIA')) colMap.media = c;
+                            if (val.includes('NAMA') || val.includes('NOMOR')) colMap.nama = c;
+                            if (val.includes('JENIS') || val.includes('KATEGORI') || val.includes('TOPIK')) colMap.jenis = c;
+                            if (val.includes('TIPE') || val.includes('DARURAT') || val.includes('STATUS LAPORAN')) colMap.tipe = c;
+                            if (val.includes('SENTIMEN')) colMap.sentimen = c;
+                            if (val.includes('PERTANYAAN') || val.includes('ADUAN') || val.includes('PESAN')) colMap.tanya = c;
+                            if (val.includes('JAWABAN') || val.includes('RESPON') || val.includes('TINDAK')) colMap.jawab = c;
+                        }
+                        if (colMap.tanya !== -1 || colMap.tgl !== -1) {
+                            headerIndex = r;
+                            break;
+                        }
+                    }
+
+                    if (headerIndex === -1) {
+                        headerIndex = 0;
+                        colMap = { tgl: 1, jam: -1, media: 2, nama: 3, jenis: 4, tipe: -1, sentimen: -1, tanya: 6, jawab: 7 };
+                    }
+
+                    let currentId = rawData.length > 0 ? Math.max(...rawData.map(d => d.id || 0)) + 1 : 1;
+                    let countAdded = 0;
+
+                    const existingSignatures = new Set(
+                        rawData.map(d => `${(d.tanggal||'').slice(0,10)}_${(d.pertanyaan||'').trim().slice(0,50)}`)
+                    );
+
+                    for (let i = headerIndex + 1; i < rows.length; i++) {
+                        let row = rows[i];
+                        if (!row || row.length === 0) continue;
+
+                        let tglRaw = colMap.tgl !== -1 ? row[colMap.tgl] : '';
+                        let jamRaw = colMap.jam !== -1 ? String(row[colMap.jam] || '').trim() : '';
+                        let mediaRaw = colMap.media !== -1 ? String(row[colMap.media] || '').trim() : '';
+                        let namaRaw = colMap.nama !== -1 ? String(row[colMap.nama] || '').trim() : '';
+                        let jenisRaw = colMap.jenis !== -1 ? String(row[colMap.jenis] || '').trim() : 'LAIN';
+                        let tipeRaw = colMap.tipe !== -1 ? String(row[colMap.tipe] || '').toUpperCase().trim() : '';
+                        let sentimenRaw = colMap.sentimen !== -1 ? String(row[colMap.sentimen] || '').trim() : '';
+                        let tanyaRaw = colMap.tanya !== -1 ? String(row[colMap.tanya] || '').trim() : '';
+                        let jawabRaw = colMap.jawab !== -1 ? String(row[colMap.jawab] || '').trim() : '';
+
+                        if (!tanyaRaw && !mediaRaw) continue;
+
+                        // Konversi Tanggal & Waktu Nyata
+                        let cleanDate = '';
+                        if (typeof tglRaw === 'number') {
+                            let unixDate = (tglRaw - 25569) * 86400 * 1000;
+                            let d = new Date(unixDate);
+                            cleanDate = d.toISOString().slice(0, 10);
+                        } else if (tglRaw instanceof Date) {
+                            cleanDate = tglRaw.toISOString().slice(0, 10);
+                        } else if (tglRaw && String(tglRaw).trim() !== '') {
+                            cleanDate = String(tglRaw).trim().slice(0, 10);
+                        } else {
+                            cleanDate = new Date().toISOString().slice(0, 10);
+                        }
+
+                        if (jamRaw) {
+                            cleanDate += " " + (jamRaw.length === 5 ? jamRaw + ":00" : jamRaw);
+                        }
+
+                        // Normalisasi Media
+                        let mediaUpper = mediaRaw.toUpperCase();
+                        let normalMedia = "WHATSAPP";
+                        if (mediaUpper.includes("INSTAGRAM") || mediaUpper.includes("IG")) normalMedia = "INSTAGRAM";
+                        else if (mediaUpper.includes("TIKTOK")) normalMedia = "TIKTOK";
+                        else if (mediaUpper.includes("FACEBOOK") || mediaUpper.includes("FB")) normalMedia = "FACEBOOK";
+                        else if (mediaUpper.includes("HOTLINE") || mediaUpper.includes("TELP")) normalMedia = "HOTLINE";
+                        else if (mediaUpper.includes("BOT")) normalMedia = "BOT";
+
+                        // Normalisasi Topik
+                        let topUpper = jenisRaw.toUpperCase();
+                        let normalTopik = "LAIN";
+                        if (topUpper.includes("SIM")) normalTopik = "SIM";
+                        else if (topUpper.includes("ETLE")) normalTopik = "ETLE";
+                        else if (topUpper.includes("TILANG")) normalTopik = "TILANG";
+                        else if (topUpper.includes("SAMSAT")) normalTopik = "SAMSAT";
+                        else if (topUpper.includes("STNK")) normalTopik = "STNK";
+                        else if (topUpper.includes("BPKB")) normalTopik = "BPKB";
+                        else if (topUpper.includes("LAKA") || topUpper.includes("PJR") || topUpper.includes("TOL")) normalTopik = "PJR";
+
+                        let isDarurat = (tipeRaw === "DARURAT") || (normalTopik === "PJR") || tanyaRaw.toLowerCase().includes("kecelakaan") || tanyaRaw.toLowerCase().includes("truk terguling");
+                        let finalTipe = isDarurat ? "DARURAT" : "REGULER";
+
+                        let sig = `${cleanDate.slice(0,10)}_${tanyaRaw.slice(0,50)}`;
+                        if (!existingSignatures.has(sig)) {
+                            rawData.push({
+                                id: currentId++,
+                                tanggal: cleanDate,
+                                sumber_media: normalMedia,
+                                nama_akun: namaRaw || 'Masyarakat',
+                                pertanyaan: tanyaRaw,
+                                jawaban: jawabRaw,
+                                topik: normalTopik,
+                                tipe_laporan: finalTipe,
+                                sentimen: sentimenRaw,
+                                created_at: new Date().toISOString()
+                            });
+                            existingSignatures.add(sig);
+                            countAdded++;
+                        }
+                    }
+
+                    saveStorageData(rawData);
+                    showToast(`✓ Sinkronisasi selesai (+${countAdded} data baru masuk).`);
+                    loadStorageData();
+                } catch (err) {
+                    showToast("Gagal membaca berkas Excel.", true);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            event.target.value = ''; 
+        }
+
+        function resetDatabase() {
+            if (confirm("PERINGATAN: Apakah Anda yakin ingin mengosongkan seluruh data aduan?")) {
+                rawData = [];
+                saveStorageData([]);
+                showToast("Database berhasil dibersihkan.");
+                loadStorageData();
+            }
+        }
+
+        function generatePDF() {
+            if (filteredData.length === 0) {
+                alert("Data kosong. Tidak ada yang dapat diekspor.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4');
+            
+            doc.setFontSize(13);
+            doc.text("LAPORAN ARSIP ADUAN MASYARAKAT - RTMC POLDA JATIM", 14, 15);
+            doc.setFontSize(8.5);
+            doc.text(`Total Laporan: ${filteredData.length} entri | Dokumen Dicetak: ${new Date().toLocaleString('id-ID')}`, 14, 21);
+            
+            const tableRows = filteredData.map((row, index) => {
+                let status = (row.jawaban || "").trim() !== "" ? "SELESAI" : "MENUNGGU";
+                let tipe = row.tipe_laporan === "DARURAT" ? "DARURAT" : "REGULER";
+                return [
+                    index + 1,
+                    row.tanggal || "-",
+                    row.sumber_media || "-",
+                    row.nama_akun || "-",
+                    row.topik || "-",
+                    tipe,
+                    row.pertanyaan || "-",
+                    row.jawaban || "-",
+                    status
+                ];
+            });
+
+            doc.autoTable({ 
+                head: [["No", "Waktu", "Kanal", "Akun Pelapor", "Kategori", "Tipe", "Isi Laporan", "Tindak Lanjut / Respon", "Status"]], 
+                body: tableRows, 
+                startY: 25,
+                styles: { fontSize: 7.5, cellPadding: 2 },
+                headStyles: { fillColor: [29, 78, 216] },
+                columnStyles: {
+                    0: { cellWidth: 8 },
+                    1: { cellWidth: 24 },
+                    2: { cellWidth: 20 },
+                    3: { cellWidth: 24 },
+                    4: { cellWidth: 18 },
+                    5: { cellWidth: 18 },
+                    8: { cellWidth: 18 }
+                }
+            });
+            
+            doc.save(`Arsip_Aduan_RTMC_${new Date().toISOString().slice(0,10)}.pdf`);
+        }
+
+        window.onload = function() {
+            datePicker = flatpickr("#filterDateRange", {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "d M Y",
+                allowInput: true,
+                onChange: function() { filterTable(); }
+            });
+            loadStorageData();
+        };
+    </script>
+</body>
+</html>

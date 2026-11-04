@@ -50,7 +50,7 @@
             justify-content: space-between; 
             flex-shrink: 0; 
             transition: all 0.3s ease;
-            z-index: 2500;
+            z-index: 100;
         }
         .sidebar.collapsed { margin-left: -220px; }
         
@@ -60,12 +60,12 @@
         .logo-title p { font-size: 10px; font-weight: 600; color: #64748b; margin-top: 2px; }
 
         .nav-menu { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
-        .nav-item a { display: flex; align-items: center; gap: 8px; padding: 10px 14px; color: #475569; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 6px; transition: all 0.15s; }
+        .nav-item a { display: flex; align-items: center; gap: 8px; padding: 10px 14px; color: #475569; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 6px; transition: all 0.15s; cursor: pointer; }
         .nav-item.active a { background-color: #eff6ff; color: #1d4ed8; font-weight: 800; }
         .nav-item a:hover { background-color: #f8fafc; color: #0f172a; }
         .sidebar-footer { font-size: 10px; color: #94a3b8; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 10px; font-weight: 600; line-height: 1.3; }
 
-        .mobile-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.45); z-index: 2000; }
+        .mobile-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.45); z-index: 90; }
 
         /* --- MAIN WORKSPACE --- */
         .main-wrapper { 
@@ -110,10 +110,10 @@
         .clock-badge { font-size: 12px; font-weight: 700; color: #1e293b; background: #f8fafc; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
         .date-picker-box { width: 195px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 11px; font-weight: 600; color: #0f172a; background: #ffffff; outline: none; }
 
-        /* --- GRID LAYOUT DESKTOP UNTUK PETA TENGAH --- */
+        /* --- GRID LAYOUT --- */
         .content-grid { 
             display: grid; 
-            grid-template-columns: 310px 1fr 310px; 
+            grid-template-columns: 300px 1fr 300px; 
             gap: 10px; 
             flex-grow: 1; 
         }
@@ -126,7 +126,7 @@
 
         .col-left, .col-center, .col-right { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 
-        /* 4 KPI METRICS */
+        /* KPI METRICS */
         .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .kpi-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 6px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
         .kpi-label { font-size: 9.5px; font-weight: 800; color: #64748b; text-transform: uppercase; }
@@ -135,14 +135,14 @@
         .color-red { color: #dc2626 !important; }
         .color-green { color: #16a34a !important; }
 
-        /* PETA JAWA TIMUR */
-        .map-card { min-height: 250px; position: relative; border-radius: 8px; flex-grow: 1; }
-        #mapJatim { width: 100%; height: 260px; z-index: 1; background: #e2e8f0; }
-        .map-overlay-badge { position: absolute; bottom: 8px; left: 8px; z-index: 500; background: rgba(255,255,255,0.95); padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 9.5px; font-weight: 800; color: #1e293b; }
+        /* PETA JAWA TIMUR (PERBAIKAN UKURAN KANVAS) */
+        .map-card { position: relative; border-radius: 8px; display: flex; flex-direction: column; height: 380px; width: 100%; overflow: hidden; }
+        #mapJatim { width: 100%; height: 100%; z-index: 1; background: #e2e8f0; }
+        .map-overlay-badge { position: absolute; bottom: 10px; left: 10px; z-index: 10; background: rgba(255,255,255,0.95); padding: 5px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 10px; font-weight: 800; color: #1e293b; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
         .mid-bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .channels-wrapper { padding: 10px 14px; }
-        .channel-line { display: flex; align-items: center; justify-content: space-between; font-size: 11px; margin: 3px 0; }
+        .channel-line { display: flex; align-items: center; justify-content: space-between; font-size: 11px; margin: 4px 0; }
         .ch-name { width: 90px; font-weight: 700; color: #334155; }
         .ch-bar-bg { flex-grow: 1; height: 8px; background: #f1f5f9; border-radius: 4px; margin: 0 8px; overflow: hidden; }
         .ch-bar-fill { height: 100%; border-radius: 4px; }
@@ -178,15 +178,11 @@
         .sent-bar-bg { height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
         .sent-bar-fill { height: 100%; border-radius: 4px; }
 
-        .radar-beacon-wrapper { position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
-        .radar-beacon-core { width: 10px; height: 10px; background-color: #ef4444; border: 2px solid #ffffff; border-radius: 50%; z-index: 2; }
-        .radar-beacon-wave { position: absolute; width: 100%; height: 100%; border-radius: 50%; background-color: rgba(239, 68, 68, 0.45); animation: radar-ping 1.4s cubic-bezier(0, 0, 0.2, 1) infinite; z-index: 1; }
-        @keyframes radar-ping { 0% { transform: scale(0.4); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
-
-        @media (max-width: 1150px) {
+        @media (max-width: 1100px) {
             .content-grid { grid-template-columns: 1fr; }
-            .sidebar { position: fixed; left: -230px; top: 0; bottom: 0; }
-            .sidebar.active { left: 0; }
+            .sidebar { position: fixed; left: -220px; top: 0; bottom: 0; }
+            .sidebar.active { left: 0; margin-left: 0; }
+            .mobile-overlay.active { display: block; }
         }
     </style>
 </head>
@@ -196,17 +192,17 @@
         <div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
 
         <!-- SIDEBAR -->
-        <aside class="sidebar collapsed" id="appSidebar">
+        <aside class="sidebar" id="appSidebar">
             <div>
                 <div class="logo-box">
                     <img src="logo-rtmc.png" alt="Logo" onerror="this.src='https://placehold.co/40x40?text=POLRI'">
                     <div class="logo-title">
                         <h1>RTMC HELP-DESK</h1>
-                        <p>Command Center Dashboard</p>
+                        <p>Command Center</p>
                     </div>
                 </div>
                 <ul class="nav-menu">
-                    <li class="nav-item active"><a href="#">Dashboard</a></li>
+                    <li class="nav-item active"><a href="index.html">Dashboard</a></li>
                     <li class="nav-item"><a href="history.html">Database</a></li>
                     <li class="nav-item"><a href="rekap.html">Laporan</a></li>
                 </ul>
@@ -229,7 +225,7 @@
                 </div>
             </header>
 
-            <!-- CONTENT GRID 3 KOLOM RESMI -->
+            <!-- CONTENT GRID -->
             <div class="content-grid">
                 
                 <!-- KOLOM KIRI: LAPORAN KEJADIAN & JAM SIBUK -->
@@ -329,7 +325,7 @@
     </div>
 
     <script>
-        // TEKS FIREBASE CONFIG ANDA
+        // MASUKKAN KODE FIREBASE CONFIG ANDA DARI CONSOLE
         const firebaseConfig = {
             apiKey: "AIzaSyDyQwE7tIy08WsbsU04Chh9zsyUzDW29gs",
   authDomain: "rtmc-helpdesk-db.firebaseapp.com",
@@ -343,18 +339,13 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        const jatimCoords = {
-            "surabaya": [-7.250445, 112.768845], "sidoarjo": [-7.4478, 112.7183], "gresik": [-7.1565, 112.6555],
-            "malang": [-7.9839, 112.6214], "mojokerto": [-7.4697, 112.4338], "pasuruan": [-7.6453, 112.9075],
-            "jember": [-8.1725, 113.6995], "banyuwangi": [-8.2192, 114.3692], "kediri": [-7.8228, 112.0119],
-            "madiun": [-7.6298, 111.5239], "bojonegoro": [-7.1502, 111.8809], "tuban": [-6.8953, 112.0507],
-            "sampang": [-7.1872, 113.2424], "pamekasan": [-7.1581, 113.4808], "sumenep": [-7.0094, 113.8478]
-        };
-
-        let map, mapMarkers = [], allRawData = [], liveState = {};
+        let map, allRawData = [];
 
         function toggleSidebar() {
-            document.getElementById('appSidebar').classList.toggle('active');
+            const sidebar = document.getElementById('appSidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
             setTimeout(() => { if (map) map.invalidateSize(); }, 300);
         }
 
@@ -366,89 +357,40 @@
         updateLiveClock();
 
         function initMap() {
-            map = L.map('mapJatim', { zoomControl: false, attributionControl: false }).setView([-7.5, 112.5], 8);
+            map = L.map('mapJatim', { zoomControl: false, attributionControl: false }).setView([-7.54, 112.45], 8);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            setTimeout(() => { map.invalidateSize(); }, 500);
         }
 
-        // LOAD DATA DARI FIREBASE CLOUD
         function loadData() {
             db.collection("aduan").onSnapshot((snapshot) => {
                 allRawData = [];
                 snapshot.forEach((doc) => {
                     allRawData.push({ id: doc.id, ...doc.data() });
                 });
-                processData();
+                renderDashboard();
             });
-        }
-
-        function processData() {
-            liveState = {
-                terpilih: allRawData.length, totalDitangani: 0,
-                klasifikasi: { pertanyaan: 0, pengaduan: 0, darurat: 0 },
-                channels: { chatbot: 0, wacs: 0, hotline: 0, tiktok: 0, instagram: 0 },
-                categories: { sim: 0, stnk: 0, bpkb: 0, samsat: 0, etle: 0, tilang: 0, pjr: 0, lain: 0 },
-                topTopics: [], wilayah: {}, laporanDarurat: [], sentimen: { positif: 0, netral: 0, negatif: 0 }, peakHours: Array(24).fill(0) 
-            };
-
-            allRawData.forEach(row => {
-                let teks = (row.pertanyaan || "").toLowerCase();
-                let isHandled = (row.jawaban || "").trim() !== "";
-                if (isHandled) liveState.totalDitangani++;
-
-                let sent = (row.sentimen || "").toLowerCase();
-                if (sent.includes("positif")) liveState.sentimen.positif++;
-                else if (sent.includes("negatif")) liveState.sentimen.negatif++;
-                else liveState.sentimen.netral++;
-
-                if (row.tipe_laporan === "DARURAT") {
-                    liveState.klasifikasi.darurat++;
-                    liveState.laporanDarurat.push({ waktuDisplay: row.tanggal || '-', teks: row.pertanyaan, jawaban: row.jawaban || '', status: isHandled ? "ditangani" : "menunggu" });
-                } else if (sent.includes("negatif")) liveState.klasifikasi.pengaduan++;
-                else liveState.klasifikasi.pertanyaan++;
-
-                let media = (row.sumber_media || "").toLowerCase();
-                if (media.includes("bot")) liveState.channels.chatbot++;
-                else if (media.includes("hot")) liveState.channels.hotline++;
-                else if (media.includes("tik")) liveState.channels.tiktok++;
-                else if (media.includes("ig")) liveState.channels.instagram++;
-                else liveState.channels.wacs++;
-
-                let kat = (row.topik || "LAIN").toLowerCase();
-                if (liveState.categories[kat] !== undefined) liveState.categories[kat]++;
-                else liveState.categories.lain++;
-            });
-
-            renderDashboard();
         }
 
         function renderDashboard() {
-            document.getElementById('val-total-masuk').innerText = liveState.terpilih;
-            document.getElementById('val-pertanyaan').innerText = liveState.klasifikasi.pertanyaan;
-            document.getElementById('val-pengaduan').innerText = liveState.klasifikasi.pengaduan;
-            document.getElementById('val-sla').innerText = (liveState.terpilih === 0 ? 0 : Math.round((liveState.totalDitangani / liveState.terpilih) * 100)) + '%';
-            document.getElementById('countDaruratHeader').innerText = liveState.klasifikasi.darurat + " Lap";
+            let total = allRawData.length;
+            let pert = 0, peng = 0, darurat = 0, responded = 0;
 
-            for (const [ch, val] of Object.entries(liveState.channels)) {
-                if (document.getElementById(`count-${ch}`)) document.getElementById(`count-${ch}`).innerText = val;
-            }
-            for (const [cat, val] of Object.entries(liveState.categories)) {
-                if (document.getElementById(`cat-${cat}`)) document.getElementById(`cat-${cat}`).innerText = val;
-            }
+            allRawData.forEach(row => {
+                let kat = (row.topik || '').toLowerCase();
+                let isHandled = (row.jawaban || '').trim() !== '';
+                if (isHandled) responded++;
 
-            const emCont = document.getElementById('emergencyContainer');
-            emCont.innerHTML = '';
-            if (liveState.laporanDarurat.length === 0) {
-                emCont.innerHTML = '<li style="text-align:center; color:#94a3b8; font-size:11px; margin-top:20px;">Wilayah Kondusif. Nihil insiden darurat.</li>';
-            } else {
-                liveState.laporanDarurat.slice(0, 10).forEach(item => {
-                    emCont.innerHTML += `
-                        <li class="emergency-card ${item.status === 'ditangani' ? 'handled' : ''}">
-                            <div class="card-meta-top"><span class="time-label">${item.waktuDisplay}</span><span class="badge-status ${item.status === 'ditangani' ? 'badge-done' : 'badge-pending'}">${item.status === 'ditangani' ? '✓ SELESAI' : '⏳ ATENSI'}</span></div>
-                            <div class="emergency-text">"${item.teks}"</div>
-                        </li>
-                    `;
-                });
-            }
+                if (row.tipe_laporan === 'DARURAT') darurat++;
+                else if ((row.sentimen || '').toLowerCase().includes('negatif')) peng++;
+                else pert++;
+            });
+
+            document.getElementById('val-total-masuk').innerText = total;
+            document.getElementById('val-pertanyaan').innerText = pert;
+            document.getElementById('val-pengaduan').innerText = peng;
+            document.getElementById('val-sla').innerText = (total === 0 ? 0 : Math.round((responded / total) * 100)) + '%';
+            document.getElementById('countDaruratHeader').innerText = darurat + " Lap";
         }
 
         window.onload = function() {

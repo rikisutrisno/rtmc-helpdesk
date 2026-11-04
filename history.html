@@ -631,5 +631,80 @@
             loadStorageData();
         };
     </script>
+    <!-- Pustaka Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<script>
+    // 1. Tempelkan objek firebaseConfig yang sama seperti di index.html:
+    const firebaseConfig = {
+        apiKey: "AIzaSyDyQwE7tIy08WsbsU04Chh9zsyUzDW29gs",
+  authDomain: "rtmc-helpdesk-db.firebaseapp.com",
+  projectId: "rtmc-helpdesk-db",
+  storageBucket: "rtmc-helpdesk-db.firebasestorage.app",
+  messagingSenderId: "298565311618",
+  appId: "1:298565311618:web:c9dbd3cf382b4ecb32289b",
+  measurementId: "G-7QDP8N24RP"
+    };
+
+    // 2. Inisialisasi Firebase & Cloud Firestore
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+
+    // 3. Fungsi Import Excel ke Firebase Cloud
+    async function handleExcelImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        showToast("Mengunggah data ke Firebase Cloud...");
+        const reader = new FileReader();
+
+        reader.onload = async function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet);
+
+                let batch = db.batch();
+                let count = 0;
+
+                for (let row of rows) {
+                    let docRef = db.collection("aduan").doc();
+                    batch.set(docRef, {
+                        tanggal: String(row["TANGGAL"] || "").slice(0, 10),
+                        sumber_media: String(row["MEDIA ADUAN"] || "WHATSAPP").toUpperCase(),
+                        nama_akun: String(row["NAMA / NOMOR"] || "Masyarakat"),
+                        topik: String(row["JENIS"] || "LAIN"),
+                        tipe_laporan: String(row["TIPE LAPORAN"] || "REGULER"),
+                        sentimen: String(row["SENTIMEN"] || "Netral"),
+                        pertanyaan: String(row["PERTANYAAN"] || ""),
+                        jawaban: String(row["JAWABAN"] || ""),
+                        created_at: new Date().toISOString()
+                    });
+
+                    count++;
+                    if (count % 400 === 0) {
+                        await batch.commit();
+                        batch = db.batch();
+                    }
+                }
+
+                if (count % 400 !== 0) {
+                    await batch.commit();
+                }
+
+                showToast(`✓ Sukses mengunggah ${count} data ke Firebase Cloud!`);
+            } catch (err) {
+                showToast("Gagal mengunggah berkas ke Firebase.", true);
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+        event.target.value = '';
+    }
+</script>
 </body>
 </html>

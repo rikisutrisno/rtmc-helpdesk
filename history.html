@@ -305,52 +305,51 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
         }
 
-        function renderTable(data) {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-            
-            document.getElementById('dataCountLabel').innerText = `Menampilkan ${data.length} dari total ${rawData.length} data laporan`;
+        function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    const keyword = (document.getElementById('filterSearch')?.value || '').toLowerCase();
+    
+    // 1. Filter data berdasarkan kata kunci pencarian
+    let filtered = allData.filter(d => 
+        (d.pertanyaan || '').toLowerCase().includes(keyword) ||
+        (d.nama_akun || '').toLowerCase().includes(keyword) ||
+        (d.topik || '').toLowerCase().includes(keyword)
+    );
 
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-indicator">Tidak ada rekaman data yang cocok dengan filter yang dipilih.</td></tr>';
-                return;
-            }
+    // Update jumlah total data
+    const counterEl = document.getElementById('dataCounter');
+    if (counterEl) counterEl.innerText = `${filtered.length} Data Terdaftar`;
 
-            data.slice().reverse().forEach(row => {
-                let jawaban = (row.jawaban || "").trim();
-                let isHandled = jawaban !== "";
-                let badgeClass = isHandled ? "badge-handled" : "badge-pending";
-                let badgeText = isHandled ? "✓ SELESAI" : "⏳ MENUNGGU";
-                
-                let isDarurat = (row.tipe_laporan === "DARURAT") || (row.topik === "PJR") || (row.pertanyaan || "").toLowerCase().includes("laka");
-                let emergencyTag = isDarurat ? `<div style="margin-top:4px;"><span class="badge-pill badge-emergency">🚨 DARURAT</span></div>` : '';
+    tbody.innerHTML = '';
 
-                let responHTML = isHandled 
-                    ? `<div class="response-box"><b>Respon RTMC:</b> ${row.jawaban}</div>` 
-                    : '';
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #94a3b8; padding: 20px;">Data tidak ditemukan.</td></tr>';
+        return;
+    }
 
-                let akunHTML = row.nama_akun ? `<div class="user-tag">👤 ${row.nama_akun}</div>` : '';
+    // 2. KUNCI PERBAIKAN: Hanya render 50 data pertama agar halaman sangat cepat & ringan!
+    const dataLimited = filtered.slice(0, 50);
 
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="color: #64748b; font-weight: 600; font-size: 11px;">${row.tanggal || '-'}</td>
-                        <td>
-                            <span class="badge-pill badge-source">${row.sumber_media || '-'}</span>
-                            ${akunHTML}
-                        </td>
-                        <td><strong style="color: #1d4ed8; font-size: 11px;">${row.topik || 'Umum'}</strong></td>
-                        <td>
-                            <div style="font-weight: 600; line-height: 1.35;">${row.pertanyaan || '-'}</div>
-                            ${responHTML}
-                        </td>
-                        <td style="text-align: center;">
-                            <span class="badge-pill ${badgeClass}">${badgeText}</span>
-                            ${emergencyTag}
-                        </td>
-                    </tr>
-                `;
-            });
-        }
+    let htmlBuffer = '';
+    dataLimited.forEach((item, index) => {
+        let badgeClass = item.tipe_laporan === 'DARURAT' ? 'badge-darurat' : 'badge-reguler';
+        htmlBuffer += `
+            <tr>
+                <td>${index + 1}</td>
+                <td><b>${item.tanggal || '-'}</b></td>
+                <td>${item.sumber_media || '-'}</td>
+                <td><b>${item.topik || 'LAIN'}</b></td>
+                <td>
+                    <div><b>${item.nama_akun || 'Pelapor'}:</b> "${item.pertanyaan || '-'}"</div>
+                    ${item.jawaban ? `<div style="color:#15803d; font-size:10.5px; margin-top:4px;"><b>✓ Respon:</b> ${item.jawaban}</div>` : ''}
+                </td>
+                <td><span class="badge ${badgeClass}">${item.tipe_laporan || 'REGULER'}</span></td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = htmlBuffer;
+}
 
         function filterTable() {
             let dateRange = document.getElementById("filterDateRange").value;
